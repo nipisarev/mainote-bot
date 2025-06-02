@@ -1,8 +1,7 @@
 import sys
-import asyncio
 from telegram import Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from gunicorn.app.base import BaseApplication
+from fastapi import FastAPI
 from mainote_bot.config import TELEGRAM_BOT_TOKEN, NOTION_API_KEY
 from mainote_bot.utils.logging import logger
 from mainote_bot.bot.commands import start_command, help_command, morning_command, settime_command, settimezone_command
@@ -11,12 +10,17 @@ from mainote_bot.bot.callbacks import button_callback
 from mainote_bot.scheduler.notifications import start_scheduler
 from mainote_bot.webhook.setup import setup_webhook
 from mainote_bot.webhook.routes import create_app
+from mainote_bot.database import init_pool
 
-def initialize_bot():
+# Create FastAPI app
+app = FastAPI()
+
+async def initialize_bot():
     """Initialize the bot and application."""
     try:
         # Create bot instance
         bot = Bot(token=TELEGRAM_BOT_TOKEN)
+        await bot.initialize()
 
         # Create application instance
         application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -30,11 +34,9 @@ def initialize_bot():
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         application.add_handler(CallbackQueryHandler(button_callback))
 
-        # Initialize the application with a new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(application.initialize())
-        # Don't close the loop here as it will be used for future operations
+        # Initialize the application
+        await application.initialize()
+        await application.start()
 
         logger.info("Successfully initialized bot and notion client")
         return bot, application, True
@@ -42,52 +44,40 @@ def initialize_bot():
         logger.error(f"Failed to initialize bot or notion client: {str(e)}", exc_info=True)
         return None, None, False
 
-class FlaskApplication(BaseApplication):
-    """Gunicorn application for running Flask."""
-    def __init__(self, app, options=None):
-        self.options = options or {}
-        self.application = app
-        super().__init__()
+@app.on_event("startup")
+async def startup_event():
+    """Initialize bot and start scheduler on startup."""
+    # Initialize database pool
+    await init_pool()
+    logger.info("Initialized database connection pool")
 
-    def load_config(self):
-        for key, value in self.options.items():
-            self.cfg.set(key, value)
-
-    def load(self):
-        return self.application
-
-def main():
-    """Main entry point for the application."""
     # Initialize bot
-    bot, application, success = initialize_bot()
+    bot, application, success = await initialize_bot()
     if not success:
         logger.error("Failed to initialize bot, exiting...")
         sys.exit(1)
 
-    # Set up webhook using the current event loop
-    loop = asyncio.get_event_loop()
-    if not loop.run_until_complete(setup_webhook(bot)):
+    # Set up webhook
+    if not await setup_webhook(bot):
         logger.error("Failed to set up webhook, but continuing anyway...")
 
     # Start the scheduler
     start_scheduler()
 
-    # Create Flask app
-    app = create_app(bot, application)
+    # Store bot and application in app state
+    app.state.bot = bot
+    app.state.application = application
 
-    # Run Flask app with gunicorn
-    options = {
-        'bind': '0.0.0.0:8080',
-        'workers': 1,
-        'worker_class': 'sync',
-        'timeout': 120,
-        'accesslog': '-',
-        'errorlog': '-',
-        'loglevel': 'info',
-        'worker_connections': 1000
-    }
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on shutdown."""
+    if hasattr(app.state, 'application'):
+        await app.state.application.stop()
+        await app.state.application.shutdown()
 
-    FlaskApplication(app, options).run()
+# Include webhook routes
+app.include_router(create_app(None, None))
 
 if __name__ == '__main__':
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)

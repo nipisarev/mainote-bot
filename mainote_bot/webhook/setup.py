@@ -1,6 +1,5 @@
 import asyncio
-from telegram import Bot
-from mainote_bot.config import TELEGRAM_BOT_TOKEN, WEBHOOK_URL
+from mainote_bot.config import WEBHOOK_URL
 from mainote_bot.utils.logging import logger
 
 async def verify_webhook(webhook_url, webhook_info):
@@ -67,3 +66,4 @@ async def setup_webhook(bot):
             if await handle_retry(attempt, max_retries, retry_delay):
                 continue
             return False
+    return None

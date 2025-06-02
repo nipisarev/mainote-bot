@@ -5,6 +5,8 @@ from mainote_bot.utils.logging import logger
 from mainote_bot.notion.tasks import update_note_type
 import mainote_bot.user_preferences as user_preferences
 import pytz
+from mainote_bot.scheduler.notifications import force_notification_recalculation
+from datetime import datetime
 
 async def send_callback_response(bot, query, text):
     """Send a response to a callback query."""
@@ -51,20 +53,39 @@ async def handle_time_callback(bot, query, time_value):
     """Handle notification time selection callback."""
     chat_id = query.message.chat_id
 
+    # Check if user has timezone set
+    user_timezone = await user_preferences.get_user_timezone(chat_id)
+    if not user_timezone:
+        await send_callback_response(
+            bot, 
+            query, 
+            "⚠️ Для корректной работы уведомлений необходимо установить часовой пояс.\n\n"
+            "Пожалуйста, используйте команду /settimezone для выбора вашего часового пояса."
+        )
+        return
+
     # Validate time format (HH:MM)
     try:
         hour, minute = map(int, time_value.split(':'))
         if 0 <= hour < 24 and 0 <= minute < 60:
             # Save user preference
-            if user_preferences.set_user_notification_time(chat_id, time_value):
+            if await user_preferences.set_user_notification_time(chat_id, time_value):
                 logger.info(f"Set notification time to {time_value} for chat ID {chat_id}")
+                
+                # Force notification recalculation
+                force_notification_recalculation()
+
+                # Get timezone offset for display
+                tz = pytz.timezone(user_timezone)
+                offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
+                offset_str = f"UTC{'+' if offset >= 0 else ''}{int(offset)}"
 
                 # Send confirmation
                 await send_callback_response(
                     bot, 
                     query, 
-                    f"⏰ Время утренних уведомлений установлено на {time_value}.\n\n"
-                    f"Вы будете получать уведомления ежедневно в {time_value}."
+                    f"⏰ Время утренних уведомлений установлено на {time_value} ({user_timezone}, {offset_str}).\n\n"
+                    f"Вы будете получать уведомления ежедневно в {time_value} по вашему местному времени."
                 )
             else:
                 logger.error(f"Failed to save notification time for chat ID {chat_id}")
@@ -98,8 +119,11 @@ async def handle_timezone_callback(bot, query, timezone_value):
         pytz.timezone(timezone_value)
 
         # Save user preference
-        if user_preferences.set_user_timezone(chat_id, timezone_value):
+        if await user_preferences.set_user_timezone(chat_id, timezone_value):
             logger.info(f"Set timezone to {timezone_value} for chat ID {chat_id}")
+            
+            # Force notification recalculation
+            force_notification_recalculation()
 
             # Send confirmation
             await send_callback_response(

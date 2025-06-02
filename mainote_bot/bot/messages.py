@@ -21,7 +21,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton("💡 Идея", callback_data=f"type:idea:{page['id']}"),
                 InlineKeyboardButton("✅ Задача", callback_data=f"type:task:{page['id']}"),
-                InlineKeyboardButton("🏖 Личное", callback_data=f"type:personal:{page['id']}")
+                InlineKeyboardButton("📝 Личное", callback_data=f"type:personal:{page['id']}")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)

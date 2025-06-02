@@ -1,11 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import pytz
 from mainote_bot.utils.logging import logger
 
 def calculate_time_without_timezone(user_id, hour, minute, user_time, now, is_fallback=False):
     """Calculate notification time for a user without timezone set or as fallback."""
     user_target_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    if now >= user_target_time:
+    
+    # If the target time is more than 5 minutes in the past, schedule for tomorrow
+    if (now - user_target_time).total_seconds() > 60:  # 5 minutes
         user_target_time = user_target_time + timedelta(days=1)
 
     notification_info = {
@@ -31,8 +33,8 @@ async def calculate_time_with_timezone(user_id, hour, minute, user_timezone_str,
         # Create target time in user's timezone
         user_target_time = now_user_tz.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-        # If we've already passed the target time today in user's timezone, schedule for tomorrow
-        if now_user_tz >= user_target_time:
+        # If the target time is more than 5 minutes in the past, schedule for tomorrow
+        if (now_user_tz - user_target_time).total_seconds() > 60:  # 5 minutes
             user_target_time = user_target_time + timedelta(days=1)
 
         # Convert back to UTC for scheduling

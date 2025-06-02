@@ -1,6 +1,11 @@
 import json
 import os
 from mainote_bot.utils.logging import logger
+from mainote_bot.database import (
+    get_user_preferences as db_get_user_preferences,
+    set_user_preferences as db_set_user_preferences,
+    get_all_users_with_preferences as db_get_all_users_with_preferences
+)
 
 # File to store user preferences
 PREFERENCES_FILE = "user_preferences.json"
@@ -27,52 +32,56 @@ def save_preferences(preferences):
         logger.error(f"Error saving user preferences: {str(e)}", exc_info=True)
         return False
 
-def get_user_notification_time(chat_id):
+async def get_user_notification_time(chat_id):
     """Get notification time for a specific user."""
-    chat_id_str = str(chat_id)
-    preferences = load_preferences()
+    preferences = await db_get_user_preferences(chat_id)
+    return preferences.get('notification_time')
 
-    # Return user's preferred time or None if not set
-    return preferences.get(chat_id_str, {}).get('notification_time')
-
-def get_user_timezone(chat_id):
+async def get_user_timezone(chat_id):
     """Get timezone for a specific user."""
-    chat_id_str = str(chat_id)
-    preferences = load_preferences()
+    preferences = await db_get_user_preferences(chat_id)
+    return preferences.get('timezone')
 
-    # Return user's timezone or None if not set
-    return preferences.get(chat_id_str, {}).get('timezone')
-
-def set_user_notification_time(chat_id, time):
+async def set_user_notification_time(chat_id, time):
     """Set notification time for a specific user."""
-    chat_id_str = str(chat_id)
-    preferences = load_preferences()
+    try:
+        # Get existing preferences or create new ones
+        preferences = await db_get_user_preferences(chat_id)
+        if not preferences:
+            preferences = {'notification_time': None, 'timezone': None}
+        
+        # Update notification time
+        preferences['notification_time'] = time
+        
+        # Save to database
+        success = await db_set_user_preferences(chat_id, preferences)
+        if not success:
+            logger.error(f"Failed to save notification time {time} for chat ID {chat_id}")
+        return success
+    except Exception as e:
+        logger.error(f"Error setting notification time for chat ID {chat_id}: {str(e)}", exc_info=True)
+        return False
 
-    # Initialize user preferences if not exists
-    if chat_id_str not in preferences:
-        preferences[chat_id_str] = {}
-
-    # Set notification time
-    preferences[chat_id_str]['notification_time'] = time
-
-    # Save preferences
-    return save_preferences(preferences)
-
-def set_user_timezone(chat_id, timezone):
+async def set_user_timezone(chat_id, timezone):
     """Set timezone for a specific user."""
-    chat_id_str = str(chat_id)
-    preferences = load_preferences()
+    try:
+        # Get existing preferences or create new ones
+        preferences = await db_get_user_preferences(chat_id)
+        if not preferences:
+            preferences = {'notification_time': None, 'timezone': None}
+        
+        # Update timezone
+        preferences['timezone'] = timezone
+        
+        # Save to database
+        success = await db_set_user_preferences(chat_id, preferences)
+        if not success:
+            logger.error(f"Failed to save timezone {timezone} for chat ID {chat_id}")
+        return success
+    except Exception as e:
+        logger.error(f"Error setting timezone for chat ID {chat_id}: {str(e)}", exc_info=True)
+        return False
 
-    # Initialize user preferences if not exists
-    if chat_id_str not in preferences:
-        preferences[chat_id_str] = {}
-
-    # Set timezone
-    preferences[chat_id_str]['timezone'] = timezone
-
-    # Save preferences
-    return save_preferences(preferences)
-
-def get_all_users_with_preferences():
+async def get_all_users_with_preferences():
     """Get all users who have set preferences."""
-    return load_preferences().keys()
+    return await db_get_all_users_with_preferences()
