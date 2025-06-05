@@ -8,6 +8,11 @@ primary_region = 'cdg'
 
 [build]
 
+[env]
+  PORT = "8080"
+  GO_BACKEND_PORT = "8081"
+  GO_BACKEND_URL = "http://localhost:8081"
+
 # Main service (Python bot webhook endpoint)
 [http_service]
   internal_port = 8080

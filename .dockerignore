@@ -204,7 +204,7 @@ site
 **/.pypirc
 
 # Go
-**/go-backend
+**/mainote-backend
 **/*.exe
 **/*.dll
 **/*.so

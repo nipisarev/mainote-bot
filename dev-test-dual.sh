@@ -1,6 +1,21 @@
 #!/bin/bash
 
-# Development testing script for dual Python bot + Go backend
+# Development testinecho -e "${BLUE}📦 Building Go backend...${NC}"
+cd mainote_server
+go build -o ../mainote-backend cmd/server/main.go
+cd ..
+
+echo -e "${GREEN}✅ Go backend built successfully${NC}"
+
+echo -e "${BLUE}🔧 Setting up environment variables...${NC}"
+export GO_PORT=8081
+export GO_BACKEND_URL=http://localhost:8081
+export ENVIRONMENT=development
+export SENTRY_DSN=${SENTRY_DSN:-""}"
+
+echo -e "${BLUE}🚀 Starting Go backend on port 8081...${NC}"
+./mainote-backend &
+GO_PID=$!l Python bot + Go backend
 # This script helps you test both services locally before deployment
 
 set -e
@@ -33,18 +48,19 @@ trap cleanup SIGINT SIGTERM EXIT
 
 echo -e "${BLUE}📦 Building Go backend...${NC}"
 cd mainote_server
-go build -o ../go-backend cmd/server/main.go
+go build -o ../mainote-backend cmd/server/main.go
 cd ..
 
 echo -e "${GREEN}✅ Go backend built successfully${NC}"
 
 echo -e "${BLUE}🔧 Setting up environment variables...${NC}"
 export GO_PORT=8081
+export GO_BACKEND_URL=http://localhost:8081
 export ENVIRONMENT=development
 export SENTRY_DSN=${SENTRY_DSN:-""}
 
 echo -e "${BLUE}🚀 Starting Go backend on port 8081...${NC}"
-./go-backend &
+./mainote-backend &
 GO_PID=$!
 
 # Wait a moment for Go backend to start

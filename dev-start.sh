@@ -16,7 +16,9 @@ fi
 
 # Build Go backend
 echo "Building Go backend..."
-go build -o go-backend cmd/server/main.go
+cd mainote_server
+go build -o ../mainote-backend cmd/server/main.go
+cd ..
 if [ $? -ne 0 ]; then
     echo "Failed to build Go backend"
     exit 1
@@ -27,7 +29,7 @@ export GO_PORT=8081
 
 # Start Go backend in background
 echo "Starting Go backend on port $GO_PORT..."
-./go-backend &
+./mainote-backend &
 GO_PID=$!
 
 # Install Python dependencies

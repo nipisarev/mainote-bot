@@ -15,7 +15,7 @@ COPY mainote_server/internal/ internal/
 RUN go mod tidy
 
 # Build Go backend
-RUN CGO_ENABLED=0 GOOS=linux go build -o go-backend cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o mainote-backend cmd/server/main.go
 
 # Final stage with Python runtime
 FROM python:3.11-slim
@@ -40,10 +40,10 @@ COPY . .
 RUN pip install -e .
 
 # Copy Go backend binary from builder stage
-COPY --from=go-builder /app/go-backend ./go-backend
+COPY --from=go-builder /app/mainote-backend ./mainote-backend
 
-# Make startup script executable
-RUN chmod +x start.sh
+# Make binaries executable
+RUN chmod +x start.sh mainote-backend
 
 # Copy supervisord configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
