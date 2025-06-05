@@ -49,10 +49,10 @@ async def set_user_notification_time(chat_id, time):
         preferences = await db_get_user_preferences(chat_id)
         if not preferences:
             preferences = {'notification_time': None, 'timezone': None}
-        
+
         # Update notification time
         preferences['notification_time'] = time
-        
+
         # Save to database
         success = await db_set_user_preferences(chat_id, preferences)
         if not success:
@@ -69,10 +69,10 @@ async def set_user_timezone(chat_id, timezone):
         preferences = await db_get_user_preferences(chat_id)
         if not preferences:
             preferences = {'notification_time': None, 'timezone': None}
-        
+
         # Update timezone
         preferences['timezone'] = timezone
-        
+
         # Save to database
         success = await db_set_user_preferences(chat_id, preferences)
         if not success:

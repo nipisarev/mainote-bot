@@ -1,0 +1,23 @@
+# Docker Compose override for development
+# This file provides additional development-specific configurations
+
+services:
+  go-backend:
+    # Enable debugging
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    # Add development labels
+    labels:
+      - "traefik.enable=false"
+      - "dev.service=go-backend"
+
+  python-bot:
+    # Enable debugging
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    # Add development labels
+    labels:
+      - "traefik.enable=false"
+      - "dev.service=python-bot" 

@@ -40,6 +40,9 @@ ENV/
 # Voice files
 voice_*.ogg
 
+# Local development database
+data/
+
 # OS
 .DS_Store
 Thumbs.db

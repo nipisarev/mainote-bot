@@ -203,6 +203,16 @@ site
 # PyPI configuration file
 **/.pypirc
 
+# Go
+**/go-backend
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+**/*.test
+**/*.out
+**/go.work
+
 # flyctl launch added from venv/.gitignore
 # Created by venv; see https://docs.python.org/3/library/venv.html
 venv/**/*

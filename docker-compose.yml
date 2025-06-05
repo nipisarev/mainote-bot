@@ -1,0 +1,97 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: mainote_postgres
+    environment:
+      POSTGRES_DB: mainote
+      POSTGRES_USER: mainote
+      POSTGRES_PASSWORD: mainote_dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mainote_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mainote -d mainote"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go Backend Service
+  go-backend:
+    build:
+      context: ./mainote_server
+      dockerfile: Dockerfile.dev
+    container_name: mainote_go_backend
+    command: /app/start-dev.sh
+    environment:
+      - GO_PORT=8081
+      - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./mainote_server:/app
+      - go_modules_cache:/go/pkg/mod
+    networks:
+      - mainote_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Python Bot Service
+  python-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mainote_python_bot
+    command: /app/start-dev.sh
+    environment:
+      - PORT=8080
+      - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - NOTION_API_KEY=${NOTION_API_KEY}
+      - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:8080}
+      - MORNING_NOTIFICATION_TIME=${MORNING_NOTIFICATION_TIME:-08:00}
+      - NOTIFICATION_CHAT_IDS=${NOTIFICATION_CHAT_IDS:-}
+      - ENABLE_MORNING_NOTIFICATIONS=${ENABLE_MORNING_NOTIFICATIONS:-true}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - GO_BACKEND_URL=http://go-backend:8081
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      go-backend:
+        condition: service_started
+    volumes:
+      - .:/app
+      - python_cache:/root/.cache
+    networks:
+      - mainote_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  go_modules_cache:
+    driver: local
+  python_cache:
+    driver: local
+
+networks:
+  mainote_network:
+    driver: bridge 

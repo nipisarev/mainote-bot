@@ -1,0 +1,30 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+# Install dependencies for development
+RUN apk add --no-cache \
+    git \
+    curl \
+    postgresql-client
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Install Air for live reloading (use new package location)
+RUN go install github.com/air-verse/air@latest
+
+# Copy source code
+COPY . .
+
+# The startup script is mounted from the host filesystem
+
+# Set environment variables for development
+ENV GO_PORT=8081
+ENV ENVIRONMENT=development
+ENV CGO_ENABLED=0
+
+EXPOSE 8081
+
+CMD ["/app/start-dev.sh"] 
