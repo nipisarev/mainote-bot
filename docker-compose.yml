@@ -41,7 +41,7 @@ services:
       retries: 3
     volumes:
       - ./mainote_server:/app
-      - ../scripts:/app/scripts
+      - ./scripts:/app/scripts
       - go_modules_cache:/go/pkg/mod
     networks:
       - mainote_network

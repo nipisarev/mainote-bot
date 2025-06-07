@@ -11,32 +11,113 @@ Telegram bot for saving notes to Notion with voice message support and morning n
 
 ## Installation
 
-1. Clone the repository:
+### 🚀 Quick Start (Recommended)
+
+1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/yourusername/mainote-bot.git
 cd mainote-bot
 ```
 
-2. Install the package:
+2. **Install the CLI tool globally:**
+
 ```bash
-# Development installation
-pip install -e .
-
-# Or install from repository
-pip install git+https://github.com/yourusername/mainote-bot.git
+make install-cli
 ```
 
-3. Create a `.env` file based on `config.py` and fill in the required environment variables:
+3. **Create environment configuration:**
+
+Copy the example environment file and fill in your API keys:
+
+```bash
+cp .env.example .env
 ```
+
+Then edit `.env` with your actual values:
+
+```bash
+# Required: Telegram Bot Token (get from @BotFather)
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+
+# Required: Notion Integration (get from https://www.notion.so/my-integrations)
 NOTION_API_KEY=your_notion_api_key
 NOTION_DATABASE_ID=your_notion_database_id
+
+# Required: OpenAI API Key (for Whisper voice recognition)
 OPENAI_API_KEY=your_openai_api_key
-WEBHOOK_URL=your_webhook_url
+
+# Required: Webhook URL (see Local Development section below)
+WEBHOOK_URL=https://your-ngrok-url.ngrok.io
+
+# Optional: Error tracking
+SENTRY_DSN=your_sentry_dsn_url
+
+# Optional: Morning notifications
 MORNING_NOTIFICATION_TIME=08:00
 NOTIFICATION_CHAT_IDS=your_chat_id1,your_chat_id2
 ENABLE_MORNING_NOTIFICATIONS=true
 ```
+
+4. **Start development environment:**
+
+```bash
+mainote-cli start
+```
+
+### 🐳 Local Development Setup
+
+This project uses **webhook-only architecture** and requires Docker for local development:
+
+**Prerequisites:**
+
+- Docker and Docker Compose installed
+- ngrok for webhook tunneling (see instructions below)
+
+**Setup webhook for local development:**
+
+1. **Install ngrok:**
+
+```bash
+# macOS (using Homebrew)
+brew install ngrok
+
+# Or download from https://ngrok.com/download
+```
+
+2. **Start ngrok tunnel:**
+
+```bash
+# In a separate terminal, expose local port 8080
+ngrok http 8080
+```
+
+3. **Update webhook URL:**
+
+Copy the ngrok URL (e.g., `https://abc123.ngrok.io`) and update your `.env` file:
+
+```bash
+WEBHOOK_URL=https://abc123.ngrok.io
+```
+
+4. **Start the bot:**
+
+```bash
+mainote-cli start
+```
+
+**Development commands:**
+
+```bash
+mainote-cli status        # Check service status
+mainote-cli logs          # View logs
+mainote-cli logs-bot      # View Python bot logs only
+mainote-cli logs-go       # View Go backend logs only
+mainote-cli stop          # Stop all services
+mainote-cli shell         # Access container shell
+```
+
+**Note:** Manual installation requires PostgreSQL setup and is not recommended for development.
 
 ## Notion Setup
 
