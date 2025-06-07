@@ -1,0 +1,38 @@
+type: object
+required:
+  - chat_id
+  - content
+  - category
+properties:
+  chat_id:
+    type: string
+    description: Telegram chat ID associated with the note
+    example: "123456789"
+    maxLength: 50
+  content:
+    type: string
+    description: The main content/text of the note
+    example: "Remember to buy groceries after work"
+    minLength: 1
+    maxLength: 10000
+  title:
+    type: string
+    nullable: true
+    description: Optional title for the note
+    example: "Shopping List"
+    maxLength: 500
+  category:
+    $ref: '../components/NoteCategory.yaml'
+  source:
+    type: string
+    description: Source of the note
+    example: "telegram_bot"
+    maxLength: 50
+  metadata:
+    type: object
+    nullable: true
+    description: Additional metadata in JSON format
+    additionalProperties: true
+    example:
+      user_id: "user123"
+      message_id: 42

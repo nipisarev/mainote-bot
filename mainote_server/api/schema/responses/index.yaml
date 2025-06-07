@@ -1,0 +1,11 @@
+# Responses Index
+BadRequest:
+  $ref: './BadRequest.yaml'
+NotFound:
+  $ref: './NotFound.yaml'
+InternalServerError:
+  $ref: './InternalServerError.yaml'
+ServiceUnavailable:
+  $ref: './ServiceUnavailable.yaml'
+NotesListResponse:
+  $ref: './NotesListResponse.yaml'

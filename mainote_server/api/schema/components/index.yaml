@@ -1,0 +1,13 @@
+# Components Index
+Note:
+  $ref: './Note.yaml'
+NoteCategory:
+  $ref: './NoteCategory.yaml'
+NoteStatus:
+  $ref: './NoteStatus.yaml'
+HealthResponse:
+  $ref: './HealthResponse.yaml'
+ErrorResponse:
+  $ref: './ErrorResponse.yaml'
+PaginationInfo:
+  $ref: './PaginationInfo.yaml'

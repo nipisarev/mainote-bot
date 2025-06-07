@@ -1,0 +1,27 @@
+type: object
+required:
+  - total
+  - limit
+  - offset
+  - has_more
+properties:
+  total:
+    type: integer
+    description: Total number of notes matching the filter
+    example: 150
+    minimum: 0
+  limit:
+    type: integer
+    description: Maximum number of notes per page
+    example: 10
+    minimum: 1
+    maximum: 100
+  offset:
+    type: integer
+    description: Number of notes skipped
+    example: 0
+    minimum: 0
+  has_more:
+    type: boolean
+    description: Whether there are more notes available
+    example: true

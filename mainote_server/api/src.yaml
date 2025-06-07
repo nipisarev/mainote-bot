@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: Mainote Server API
+  description: |
+    REST API for Mainote Server - a note management service.
+    
+    This API provides CRUD operations for managing notes with support for:
+    - Creating, reading, updating, and deleting notes
+    - Filtering by category, status, and chat ID
+    - Pagination for large result sets
+    - Rich metadata support using JSON
+    
+    ## Authentication
+    Currently no authentication is required (development mode).
+    
+    ## Rate Limiting
+    No rate limiting is currently implemented.
+    
+  version: "1.0.0"
+  contact:
+    name: Mainote Team
+    email: support@mainote.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8081
+    description: Development server
+  - url: https://mainote-server.fly.dev
+    description: Production server
+
+paths:
+  # Health check endpoint
+  /health:
+    $ref: 'path/health.yaml'
+  
+  # Notes CRUD endpoints
+  /api/v1/notes:
+    $ref: 'path/notes.yaml'
+  
+  /api/v1/notes/{noteId}:
+    $ref: 'path/note_by_id.yaml'
+
+components:
+  schemas:
+    $ref: 'schema/components/index.yaml'
+  
+  responses:
+    $ref: 'schema/responses/index.yaml'
+
+tags:
+  - name: Health
+    description: Health check operations
+  - name: Notes
+    description: Note management operations
+    externalDocs:
+      description: Find out more about notes
+      url: https://docs.mainote.com/notes

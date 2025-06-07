@@ -1,0 +1,5 @@
+description: Service is unhealthy
+content:
+  application/json:
+    schema:
+      $ref: '../components/ErrorResponse.yaml'

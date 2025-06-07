@@ -1,0 +1,23 @@
+type: object
+required:
+  - status
+  - timestamp
+properties:
+  status:
+    type: string
+    enum: [healthy, unhealthy]
+    description: Overall health status
+    example: "healthy"
+  timestamp:
+    type: string
+    format: date-time
+    description: Timestamp of the health check
+    example: "2025-06-08T10:30:00Z"
+  version:
+    type: string
+    description: Application version
+    example: "1.0.0"
+  uptime:
+    type: string
+    description: Application uptime
+    example: "2h 30m 15s"

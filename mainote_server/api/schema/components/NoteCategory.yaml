@@ -1,0 +1,11 @@
+type: string
+enum:
+  - idea
+  - task
+  - personal
+description: |
+  Category of the note:
+  * `idea` - Ideas, thoughts, inspirations
+  * `task` - Tasks, to-dos, reminders
+  * `personal` - Personal notes, diary entries
+example: "idea"

@@ -1,0 +1,5 @@
+description: Bad request - validation error or malformed request
+content:
+  application/json:
+    schema:
+      $ref: '../components/ErrorResponse.yaml'

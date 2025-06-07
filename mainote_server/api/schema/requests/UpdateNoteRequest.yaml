@@ -1,0 +1,27 @@
+type: object
+description: All fields are optional for partial updates
+properties:
+  content:
+    type: string
+    description: The main content/text of the note
+    example: "Updated note content"
+    minLength: 1
+    maxLength: 10000
+  title:
+    type: string
+    nullable: true
+    description: Optional title for the note
+    example: "Updated Title"
+    maxLength: 500
+  category:
+    $ref: '../components/NoteCategory.yaml'
+  status:
+    $ref: '../components/NoteStatus.yaml'
+  metadata:
+    type: object
+    nullable: true
+    description: Additional metadata in JSON format
+    additionalProperties: true
+    example:
+      updated: true
+      version: 2

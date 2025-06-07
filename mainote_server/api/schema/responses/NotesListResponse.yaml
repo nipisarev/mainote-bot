@@ -1,0 +1,12 @@
+type: object
+required:
+  - notes
+  - pagination
+properties:
+  notes:
+    type: array
+    items:
+      $ref: '../components/Note.yaml'
+    description: Array of notes
+  pagination:
+    $ref: '../components/PaginationInfo.yaml'

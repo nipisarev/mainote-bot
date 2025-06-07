@@ -1,0 +1,96 @@
+get:
+  tags:
+    - Notes
+  summary: List notes
+  description: |
+    Retrieve a paginated list of notes with optional filtering.
+    
+    Supports filtering by:
+    - Chat ID (required)
+    - Category (optional)
+    - Status (optional)
+    
+    Results are ordered by creation date (newest first).
+  operationId: listNotes
+  parameters:
+    - name: chat_id
+      in: query
+      required: true
+      description: Telegram chat ID to filter notes by
+      schema:
+        type: string
+        example: "123456789"
+        maxLength: 50
+    - name: category
+      in: query
+      required: false
+      description: Filter notes by category
+      schema:
+        $ref: '../schema/components/NoteCategory.yaml'
+    - name: status
+      in: query
+      required: false
+      description: Filter notes by status
+      schema:
+        $ref: '../schema/components/NoteStatus.yaml'
+    - name: limit
+      in: query
+      required: false
+      description: Maximum number of notes to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+        example: 10
+    - name: offset
+      in: query
+      required: false
+      description: Number of notes to skip for pagination
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+        example: 0
+  responses:
+    '200':
+      description: List of notes retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../schema/responses/NotesListResponse.yaml'
+    '400':
+      $ref: '../schema/responses/BadRequest.yaml'
+    '500':
+      $ref: '../schema/responses/InternalServerError.yaml'
+
+post:
+  tags:
+    - Notes
+  summary: Create a note
+  description: |
+    Create a new note.
+    
+    The note will be assigned:
+    - A unique UUID as the ID
+    - Current timestamp for created_at and updated_at
+    - Default status of "active"
+    - Default source of "text" if not provided
+  operationId: createNote
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schema/requests/CreateNoteRequest.yaml'
+  responses:
+    '201':
+      description: Note created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../schema/components/Note.yaml'
+    '400':
+      $ref: '../schema/responses/BadRequest.yaml'
+    '500':
+      $ref: '../schema/responses/InternalServerError.yaml'

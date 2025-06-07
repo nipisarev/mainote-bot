@@ -1,0 +1,11 @@
+type: string
+enum:
+  - active
+  - done
+  - archived
+description: |
+  Status of the note:
+  * `active` - Active note (default)
+  * `done` - Completed/finished note
+  * `archived` - Archived/inactive note
+example: "active"

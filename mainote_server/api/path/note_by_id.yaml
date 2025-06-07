@@ -1,0 +1,71 @@
+parameters:
+  - name: noteId
+    in: path
+    required: true
+    description: Unique identifier of the note
+    schema:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+get:
+  tags:
+    - Notes
+  summary: Get a note
+  description: Retrieve a specific note by its ID
+  operationId: getNoteById
+  responses:
+    '200':
+      description: Note retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../schema/components/Note.yaml'
+    '404':
+      $ref: '../schema/responses/NotFound.yaml'
+    '500':
+      $ref: '../schema/responses/InternalServerError.yaml'
+
+put:
+  tags:
+    - Notes
+  summary: Update a note
+  description: |
+    Update an existing note.
+    
+    All fields are optional - only provided fields will be updated.
+    The updated_at timestamp will be automatically updated.
+  operationId: updateNote
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schema/requests/UpdateNoteRequest.yaml'
+  responses:
+    '200':
+      description: Note updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../schema/components/Note.yaml'
+    '400':
+      $ref: '../schema/responses/BadRequest.yaml'
+    '404':
+      $ref: '../schema/responses/NotFound.yaml'
+    '500':
+      $ref: '../schema/responses/InternalServerError.yaml'
+
+delete:
+  tags:
+    - Notes
+  summary: Delete a note
+  description: Delete a note by its ID
+  operationId: deleteNote
+  responses:
+    '204':
+      description: Note deleted successfully
+    '404':
+      $ref: '../schema/responses/NotFound.yaml'
+    '500':
+      $ref: '../schema/responses/InternalServerError.yaml'

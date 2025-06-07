@@ -1,0 +1,27 @@
+type: object
+required:
+  - error
+  - message
+  - timestamp
+properties:
+  error:
+    type: string
+    description: Error type or category
+    example: "validation_failed"
+  message:
+    type: string
+    description: Human-readable error message
+    example: "The content field is required"
+  details:
+    type: object
+    nullable: true
+    description: Additional error details
+    additionalProperties: true
+    example:
+      field: "content"
+      code: "required"
+  timestamp:
+    type: string
+    format: date-time
+    description: Timestamp when the error occurred
+    example: "2025-06-08T10:30:00Z"
