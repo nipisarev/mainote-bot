@@ -15,6 +15,7 @@ The project uses dual-service architecture deployed on fly.io with shared Postgr
 - **Database**: PostgreSQL (production), PostgreSQL (development)
 - **Deployment**: Docker containers on fly.io platform
 - **Development**: Docker Compose with live reload
+- **Project Management**: CLI-first approach with `mainote-cli` and `Makefile`
 - **Monitoring**: Sentry integration for error tracking
 
 ## Directory Structure & Conventions
@@ -43,7 +44,9 @@ mainote-bot/
 ├── Dockerfile             # Production build (dual-service)
 ├── Dockerfile.dev         # Development build (Python)
 ├── fly.toml              # Fly.io deployment configuration
-└── dev-docker.sh         # Development management script
+├── Makefile              # Main build system with project commands
+├── mainote-cli           # CLI wrapper for project management
+└── scripts/              # Legacy scripts (maintained for compatibility)
 ```
 
 ## Technology Stack & Dependencies
@@ -64,30 +67,82 @@ mainote-bot/
 
 ## Development Commands
 
-### Local Development with Docker
+### Primary CLI (Recommended)
 
 ```bash
 # Start development environment
-./dev-docker.sh start
+mainote-cli start
 
 # Stop all services
-./dev-docker.sh stop
+mainote-cli stop
 
 # View logs (all services or specific)
+mainote-cli logs
+mainote-cli logs-bot
+mainote-cli logs-go
+
+# Rebuild containers after changes
+mainote-cli docker-build
+
+# Clean up (remove containers, volumes, networks)
+mainote-cli docker-clean
+
+# Access container shell
+mainote-cli shell
+
+# Check service status
+mainote-cli status
+
+# Full command reference
+mainote-cli help-full
+```
+
+### Legacy Docker Commands (Alternative)
+
+```bash
+# Legacy script usage (still supported)
+./dev-docker.sh start
+./dev-docker.sh stop
 ./dev-docker.sh logs
 ./dev-docker.sh logs python-bot
 ./dev-docker.sh logs go-backend
 ./dev-docker.sh logs postgres
-
-# Rebuild containers after changes
 ./dev-docker.sh build
-
-# Clean up (remove containers, volumes, networks)
 ./dev-docker.sh clean
-
-# Access container shell
 ./dev-docker.sh shell python-bot
 ./dev-docker.sh shell go-backend
+```
+
+> **Recommendation**: Use `mainote-cli` for all development tasks
+
+### CLI Installation & Usage
+
+```bash
+# Install CLI globally for use from any directory
+make install-cli
+
+# Use from any directory once installed
+mainote-cli start
+mainote-cli status
+mainote-cli logs
+mainote-cli stop
+
+# Available command categories
+mainote-cli help          # Show basic commands
+mainote-cli help-full     # Show all available commands
+
+# Shortcut commands
+mainote-cli start         # → docker-start (start dev environment)
+mainote-cli stop          # → docker-stop (stop all services)
+mainote-cli status        # → docker-status (check service status)
+mainote-cli logs          # → logs (show all service logs)
+mainote-cli shell         # → shell (access Python container)
+
+# Full commands (examples)
+mainote-cli docker-build  # Build all containers
+mainote-cli docker-clean  # Clean containers/volumes
+mainote-cli dev-python    # Run Python bot locally
+mainote-cli prod-start    # Production deployment commands
 ```
 
 ### Service URLs (Development)
@@ -333,7 +388,12 @@ curl -s http://localhost:8080/health | jq '.services | to_entries | map(select(.
 
 ### Logging
 ```bash
-# Development logs
+# Development logs (recommended)
+mainote-cli logs | grep ERROR
+mainote-cli logs-bot | grep ERROR
+mainote-cli logs-go | grep ERROR
+
+# Legacy development logs
 ./dev-docker.sh logs python-bot | grep ERROR
 ./dev-docker.sh logs go-backend | grep ERROR
 
@@ -384,7 +444,10 @@ docker ps
 docker logs mainote_python_bot
 docker logs mainote_go_backend
 
-# Shell access for debugging
+# Shell access for debugging (recommended)
+mainote-cli shell
+
+# Legacy shell access
 ./dev-docker.sh shell python-bot
 ./dev-docker.sh shell go-backend
 

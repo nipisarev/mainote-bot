@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Development script using Docker Compose
-# This replaces dev-start.sh and dev-test-dual.sh
+# Part of the organized scripts/ directory structure
 
 set -e
 

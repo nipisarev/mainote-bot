@@ -42,8 +42,11 @@ RUN pip install -e .
 # Copy Go backend binary from builder stage
 COPY --from=go-builder /app/mainote-backend ./mainote-backend
 
+# Copy scripts
+COPY scripts/ scripts/
+
 # Make binaries executable
-RUN chmod +x start.sh mainote-backend
+RUN chmod +x scripts/production/start.sh mainote-backend
 
 # Copy supervisord configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf

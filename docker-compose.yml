@@ -26,7 +26,7 @@ services:
       context: ./mainote_server
       dockerfile: Dockerfile.dev
     container_name: mainote_go_backend
-    command: /app/start-dev.sh
+    command: /app/scripts/development/start-go-dev.sh
     environment:
       - GO_PORT=8081
       - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote
@@ -41,6 +41,7 @@ services:
       retries: 3
     volumes:
       - ./mainote_server:/app
+      - ../scripts:/app/scripts
       - go_modules_cache:/go/pkg/mod
     networks:
       - mainote_network
@@ -55,7 +56,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: mainote_python_bot
-    command: /app/start-dev.sh
+    command: /app/scripts/development/start-dev.sh
     environment:
       - PORT=8080
       - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote

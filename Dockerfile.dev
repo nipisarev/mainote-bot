@@ -34,4 +34,4 @@ ENV ENVIRONMENT=development
 
 EXPOSE 8080
 
-CMD ["/app/start-dev.sh"] 
+CMD ["/app/scripts/development/start-dev.sh"] 

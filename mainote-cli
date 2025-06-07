@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# Mainote CLI - Command line interface for mainote-bot project
+# This script allows running project commands from anywhere in the system
+
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Find the project directory
+# First, check if we're already in the project directory
+if [[ -f "./Makefile" && -d "./mainote_bot" ]]; then
+    PROJECT_DIR="$(pwd)"
+elif [[ -L "${BASH_SOURCE[0]}" ]]; then
+    # If this is a symlink (global installation), follow it to find the project
+    REAL_SCRIPT="$(readlink "${BASH_SOURCE[0]}")"
+    PROJECT_DIR="$(cd "$(dirname "$REAL_SCRIPT")" && pwd)"
+else
+    # If run locally, use the script's directory
+    PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+# Verify we found the correct project directory
+if [[ ! -f "$PROJECT_DIR/Makefile" || ! -d "$PROJECT_DIR/mainote_bot" ]]; then
+    echo -e "${RED}Error: Could not find mainote-bot project directory.${NC}"
+    echo "Please ensure you're in the project directory or mainote-cli is installed correctly."
+    echo "Searched in: $PROJECT_DIR"
+    exit 1
+fi
+
+# Function to show CLI-specific help
+show_cli_help() {
+    echo -e "${BLUE}🚀 Mainote CLI - Project Management Tool${NC}"
+    echo ""
+    echo "Usage: mainote-cli [COMMAND]"
+    echo ""
+    echo -e "${GREEN}Quick Commands:${NC}"
+    echo "  start              Start Docker development environment"
+    echo "  stop               Stop Docker development environment"
+    echo "  logs               Show Docker logs"
+    echo "  status             Show Docker services status"
+    echo "  shell              Open shell in Python bot container"
+    echo ""
+    echo -e "${YELLOW}All Available Commands:${NC}"
+    echo "  Run 'mainote-cli help-full' to see all available make targets"
+    echo ""
+    echo -e "${BLUE}Examples:${NC}"
+    echo "  mainote-cli start          # Start development environment"
+    echo "  mainote-cli dev-python     # Start Python bot locally"
+    echo "  mainote-cli prod-start     # Start production environment"
+    echo "  mainote-cli docker-clean   # Clean Docker environment"
+    echo ""
+}
+
+# Change to project directory
+cd "$PROJECT_DIR"
+
+# Handle special cases and shortcuts
+case "${1:-help}" in
+    "help"|"-h"|"--help"|"")
+        show_cli_help
+        ;;
+    "help-full")
+        make help
+        ;;
+    "start")
+        # Shortcut for docker-start
+        make docker-start
+        ;;
+    "stop")
+        # Shortcut for docker-stop
+        make docker-stop
+        ;;
+    "logs")
+        # Shortcut for docker-logs
+        make docker-logs
+        ;;
+    "status")
+        # Shortcut for docker-status
+        make docker-status
+        ;;
+    "shell")
+        # Shortcut for docker-shell-bot
+        make docker-shell-bot
+        ;;
+    "install")
+        # Self-installation
+        make install-cli
+        ;;
+    *)
+        # Pass through to make with all arguments
+        echo -e "${BLUE}Running: make $@${NC}"
+        make "$@"
+        ;;
+esac
