@@ -251,7 +251,7 @@ mainote-cli stop
 **Services will be available at:**
 - **Python Bot**: http://localhost:8080
 - **Go Backend**: http://localhost:8081
-- **Health Check**: http://localhost:8081/health
+- **Health Check**: http://localhost:8080/health
 
 **Features:**
 - ✅ Automatic code reloading on changes

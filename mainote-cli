@@ -42,6 +42,7 @@ show_cli_help() {
     echo -e "${GREEN}Quick Commands:${NC}"
     echo "  start              Start Docker development environment"
     echo "  stop               Stop Docker development environment"
+    echo "  restart            Restart Docker development environment"
     echo "  logs               Show Docker logs"
     echo "  status             Show Docker services status"
     echo "  shell              Open shell in Python bot container"
@@ -51,6 +52,8 @@ show_cli_help() {
     echo ""
     echo -e "${BLUE}Examples:${NC}"
     echo "  mainote-cli start          # Start development environment"
+    echo "  mainote-cli restart        # Restart development environment"
+    echo "  mainote-cli reset          # Reset environment (clean + build + start)"
     echo "  mainote-cli dev-python     # Start Python bot locally"
     echo "  mainote-cli prod-start     # Start production environment"
     echo "  mainote-cli docker-clean   # Clean Docker environment"
@@ -75,6 +78,10 @@ case "${1:-help}" in
     "stop")
         # Shortcut for docker-stop
         make docker-stop
+        ;;
+    "restart")
+        # Shortcut for restart
+        make restart
         ;;
     "logs")
         # Shortcut for docker-logs

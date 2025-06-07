@@ -362,7 +362,7 @@ curl https://mainote-bot.fly.dev/health
 #### Individual Service Health Checks
 ```bash
 # Go backend health only (development)
-curl http://localhost:8081/health
+curl http://localhost:8080/health
 
 # Direct PostgreSQL check
 docker exec mainote_postgres pg_isready -U mainote -d mainote

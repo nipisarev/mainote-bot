@@ -28,6 +28,7 @@ show_help() {
     echo "  start       Start all services"
     echo "  stop        Stop all services"
     echo "  restart     Restart all services"
+    echo "  reset       Reset environment (clean + build + start)"
     echo "  logs        Show logs from all services"
     echo "  logs-bot    Show logs from Python bot only"
     echo "  logs-go     Show logs from Go backend only"
@@ -105,7 +106,7 @@ case "$1" in
         echo -e "${BLUE}📋 Service URLs:${NC}"
         echo -e "  🐍 Python Bot:  http://localhost:8080"
         echo -e "  🐹 Go Backend:  http://localhost:8081"
-        echo -e "  🏥 Health Check: http://localhost:8081/health"
+        echo -e "  🏥 Health Check: http://localhost:8080/health"
         echo ""
         echo -e "${YELLOW}💡 Use '$0 logs' to follow logs${NC}"
         ;;
@@ -158,6 +159,25 @@ case "$1" in
     "test")
         echo -e "${BLUE}🧪 Running tests...${NC}"
         docker-compose exec python-bot python -m pytest
+        ;;
+    "reset")
+        echo -e "${YELLOW}🔄 Resetting environment (clean + build + start)...${NC}"
+        echo -e "${BLUE}Step 1/3: Cleaning up...${NC}"
+        docker-compose down -v --remove-orphans
+        docker system prune -f
+        echo -e "${BLUE}Step 2/3: Building services...${NC}"
+        setup_dirs
+        docker-compose build
+        echo -e "${BLUE}Step 3/3: Starting services...${NC}"
+        check_env
+        docker-compose up -d
+        echo -e "${GREEN}✅ Environment reset completed!${NC}"
+        echo -e "${BLUE}📋 Service URLs:${NC}"
+        echo -e "  🐍 Python Bot:  http://localhost:8080"
+        echo -e "  🐹 Go Backend:  http://localhost:8081"
+        echo -e "  🏥 Health Check: http://localhost:8080/health"
+        echo ""
+        echo -e "${YELLOW}💡 Use '$0 logs' to follow logs${NC}"
         ;;
     "help"|"")
         show_help

@@ -1,7 +1,7 @@
 # Mainote Bot - Project Management Makefile
 # Organized script execution for development and production environments
 
-.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help install-cli
+.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help install-cli restart reset
 
 # Default target
 .DEFAULT_GOAL := help
@@ -20,6 +20,8 @@ help:
 	@echo "  make docker-start      Start all services with Docker Compose"
 	@echo "  make docker-stop       Stop all Docker services"
 	@echo "  make docker-restart    Restart all Docker services"
+	@echo "  make restart           Restart Docker services (shortcut)"
+	@echo "  make reset             Reset Docker environment (clean + build + start)"
 	@echo "  make docker-logs       Show logs from all services"
 	@echo "  make docker-build      Build all Docker services"
 	@echo "  make docker-clean      Clean up containers, networks, and volumes"
@@ -100,3 +102,12 @@ install-cli:
 	@sudo ln -sf "$(PWD)/mainote-cli" /usr/local/bin/mainote-cli
 	@echo "\033[32m✅ mainote-cli installed successfully!\033[0m"
 	@echo "You can now use 'mainote-cli' from anywhere in your terminal."
+
+# Convenience Commands
+restart:
+	@echo "\033[34mRestarting Docker development environment...\033[0m"
+	@./scripts/docker/dev-docker.sh restart
+
+reset:
+	@echo "\033[31mResetting Docker environment (clean + build + start)...\033[0m"
+	@./scripts/docker/dev-docker.sh reset
