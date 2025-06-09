@@ -26,13 +26,13 @@ get:
       required: false
       description: Filter notes by category
       schema:
-        $ref: '../schema/components/NoteCategory.yaml'
+        $ref: '../schema/components/note_category.yaml'
     - name: status
       in: query
       required: false
       description: Filter notes by status
       schema:
-        $ref: '../schema/components/NoteStatus.yaml'
+        $ref: '../schema/components/note_status.yaml'
     - name: limit
       in: query
       required: false
@@ -58,11 +58,11 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schema/responses/NotesListResponse.yaml'
+            $ref: '../schema/responses/notes_list_response.yaml'
     '400':
-      $ref: '../schema/responses/BadRequest.yaml'
+      $ref: '../schema/responses/bad_request.yaml'
     '500':
-      $ref: '../schema/responses/InternalServerError.yaml'
+      $ref: '../schema/responses/internal_server_error.yaml'
 
 post:
   tags:
@@ -82,15 +82,15 @@ post:
     content:
       application/json:
         schema:
-          $ref: '../schema/requests/CreateNoteRequest.yaml'
+          $ref: '../schema/requests/create_note_request.yaml'
   responses:
     '201':
       description: Note created successfully
       content:
         application/json:
           schema:
-            $ref: '../schema/components/Note.yaml'
+            $ref: '../schema/components/note.yaml'
     '400':
-      $ref: '../schema/responses/BadRequest.yaml'
+      $ref: '../schema/responses/bad_request.yaml'
     '500':
-      $ref: '../schema/responses/InternalServerError.yaml'
+      $ref: '../schema/responses/internal_server_error.yaml'

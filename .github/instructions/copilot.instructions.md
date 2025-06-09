@@ -41,8 +41,13 @@ mainote-bot/
 │   └── .air.toml         # Live reload configuration
 ├── migrations/            # Database migrations (Alembic)
 ├── docker-compose.yml     # Development environment
-├── Dockerfile             # Production build (dual-service)
-├── Dockerfile.dev         # Development build (Python)
+├── extra/                 # Build configurations and templates
+│   └── build/dockerfile/  # Dockerfiles organized by environment
+│       ├── dev/          # Development Dockerfiles
+│       │   ├── Dockerfile.bot  # Python bot development
+│       │   └── Dockerfile.server      # Go backend development
+│       └── production/   # Production Dockerfiles
+│           └── Dockerfile  # Multi-service production build
 ├── fly.toml              # Fly.io deployment configuration
 ├── Makefile              # Main build system with project commands
 ├── mainote-cli           # CLI wrapper for project management

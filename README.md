@@ -163,19 +163,53 @@ mainote_bot/
 ```
 
 ### 🐹 Go Backend (mainote_server/)
-HTTP API service with clean architecture:
+HTTP API service with clean architecture and OpenAPI-generated code:
 
 ```
 mainote_server/
-├── cmd/server/           # Application entry point
-├── internal/             # Private application code
+├── api/                  # OpenAPI specification and generated code
+│   ├── src.yaml         # Main OpenAPI specification
+│   ├── generated/       # Generated API code
+│   │   ├── private.yaml # Generated OpenAPI specification
+│   │   └── private/     # Generated Go server code
+│   │       ├── api.go               # Service interfaces
+│   │       ├── api_health.go        # Health API controller
+│   │       ├── api_notes.go         # Notes API controller
+│   │       ├── error.go             # Error handling
+│   │       ├── helpers.go           # Helper functions
+│   │       ├── impl.go              # Implementation types
+│   │       ├── logger.go            # Logging middleware
+│   │       ├── routers.go           # HTTP routing
+│   │       └── model_*.go           # Data models
+│   ├── path/            # API endpoint definitions
+│   │   ├── health.yaml  # Health check endpoint
+│   │   ├── notes.yaml   # Notes collection endpoints
+│   │   └── note_by_id.yaml # Individual note endpoints
+│   └── schema/          # Schema definitions
+│       ├── components/  # Reusable components
+│       ├── requests/    # Request schemas
+│       └── responses/   # Response schemas
+├── cmd/                 # Application entry points
+│   └── server/          # HTTP server
+├── internal/            # Private application code
 │   ├── config/          # Configuration management
 │   ├── delivery/http/   # HTTP handlers and middleware
 │   ├── domain/          # Business entities and rules
+│   ├── repository/      # Data access layer
 │   └── usecase/         # Application business logic
+├── scripts/             # Build and development scripts
+│   └── openapi.sh       # OpenAPI code generation script
 ├── go.mod               # Go module
 └── go.sum               # Dependencies
 ```
+
+**API Generation Features:**
+- Complete CRUD operations for notes
+- OpenAPI 3.0 specification with proper validation
+- Generated Go types, interfaces, and handlers using standard OpenAPI Generator
+- Automatic code generation from specification via Docker
+- Modular schema organization for maintainability
+- Standard tooling for consistent, industry-standard code generation
 
 ### 🚀 Deployment
 
@@ -390,6 +424,48 @@ The bot supports timezone configuration for correct notification operation. This
 1. Use the `/settimezone` command to select your timezone
 2. Choose your timezone from the list
 3. After that, notifications will arrive exactly at the time you specified, taking your timezone into account
+
+## API Development
+
+### OpenAPI Specification & Code Generation
+
+The Go backend uses OpenAPI 3.0 specification with automatic code generation for type-safe API development:
+
+**Generate API code from OpenAPI specification:**
+
+```bash
+# Using root Makefile (recommended)
+make server-generate
+
+# Or using legacy alias
+make generate-api
+
+# Or directly from mainote_server directory
+cd mainote_server && ./scripts/openapi.sh generate
+```
+
+**OpenAPI Structure:**
+- `mainote_server/api/src.yaml` - Main OpenAPI specification
+- `mainote_server/api/path/` - API endpoint definitions (health, notes, note_by_id)
+- `mainote_server/api/schema/` - Organized schema definitions:
+  - `components/` - Reusable components (note, error_response, etc.)
+  - `requests/` - Request schemas (create_note_request, update_note_request)
+  - `responses/` - Response schemas (notes_list_response, error responses)
+
+**Generated Code:**
+- `api/generated/private.yaml` - Generated OpenAPI specification  
+- `api/generated/private/` - Generated Go server interfaces and models
+- Clean separation between source specifications and generated code
+
+**Available API Endpoints:**
+- `GET /health` - Health check
+- `GET /notes` - List all notes with pagination
+- `POST /notes` - Create a new note
+- `GET /notes/{id}` - Get specific note by ID
+- `PUT /notes/{id}` - Update specific note
+- `DELETE /notes/{id}` - Delete specific note
+
+The API supports full CRUD operations with proper validation, error handling, and OpenAPI documentation.
 
 ## Development
 

@@ -33,9 +33,9 @@ properties:
     example: "Shopping List"
     maxLength: 500
   category:
-    $ref: './NoteCategory.yaml'
+    $ref: './note_category.yaml'
   status:
-    $ref: './NoteStatus.yaml'
+    $ref: './note_status.yaml'
   source:
     type: string
     description: Source of the note (e.g., 'text', 'voice', 'telegram_bot')

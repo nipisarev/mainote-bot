@@ -39,7 +39,12 @@ show_cli_help() {
     echo ""
     echo "Usage: mainote-cli [COMMAND]"
     echo ""
-    echo -e "${GREEN}Quick Commands:${NC}"
+    echo -e "${GREEN}Development Commands:${NC}"
+    echo "  generate-api       Generate Go API code from OpenAPI specification"
+    echo "  dev-python         Start Python bot locally"
+    echo "  dev-go             Start Go backend locally"
+    echo ""
+    echo -e "${GREEN}Docker Commands:${NC}"
     echo "  start              Start Docker development environment"
     echo "  stop               Stop Docker development environment"
     echo "  restart            Restart Docker development environment"
@@ -54,6 +59,7 @@ show_cli_help() {
     echo "  mainote-cli start          # Start development environment"
     echo "  mainote-cli restart        # Restart development environment"
     echo "  mainote-cli reset          # Reset environment (clean + build + start)"
+    echo "  mainote-cli generate-api   # Generate API code from OpenAPI spec"
     echo "  mainote-cli dev-python     # Start Python bot locally"
     echo "  mainote-cli prod-start     # Start production environment"
     echo "  mainote-cli docker-clean   # Clean Docker environment"
@@ -94,6 +100,10 @@ case "${1:-help}" in
     "shell")
         # Shortcut for docker-shell-bot
         make docker-shell-bot
+        ;;
+    "generate-api")
+        # Shortcut for generate_api
+        make generate-api
         ;;
     "install")
         # Self-installation

@@ -24,7 +24,7 @@ services:
   go-backend:
     build:
       context: ./mainote_server
-      dockerfile: Dockerfile.dev
+      dockerfile: ../extra/build/dockerfile/dev/Dockerfile.server
     container_name: mainote_go_backend
     command: /app/scripts/development/start-go-dev.sh
     environment:
@@ -54,7 +54,7 @@ services:
   python-bot:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: extra/build/dockerfile/dev/Dockerfile.bot
     container_name: mainote_python_bot
     command: /app/scripts/development/start-dev.sh
     environment:

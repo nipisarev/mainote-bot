@@ -44,10 +44,34 @@ paths:
 
 components:
   schemas:
-    $ref: 'schema/components/index.yaml'
+    Note:
+      $ref: 'schema/components/note.yaml'
+    NoteCategory:
+      $ref: 'schema/components/note_category.yaml'
+    NoteStatus:
+      $ref: 'schema/components/note_status.yaml'
+    HealthResponse:
+      $ref: 'schema/components/health_response.yaml'
+    ErrorResponse:
+      $ref: 'schema/components/error_response.yaml'
+    PaginationInfo:
+      $ref: 'schema/components/pagination_info.yaml'
+    CreateNoteRequest:
+      $ref: 'schema/requests/create_note_request.yaml'
+    UpdateNoteRequest:
+      $ref: 'schema/requests/update_note_request.yaml'
+    NotesListResponse:
+      $ref: 'schema/responses/notes_list_response.yaml'
   
   responses:
-    $ref: 'schema/responses/index.yaml'
+    BadRequest:
+      $ref: 'schema/responses/bad_request.yaml'
+    NotFound:
+      $ref: 'schema/responses/not_found.yaml'
+    InternalServerError:
+      $ref: 'schema/responses/internal_server_error.yaml'
+    ServiceUnavailable:
+      $ref: 'schema/responses/service_unavailable.yaml'
 
 tags:
   - name: Health

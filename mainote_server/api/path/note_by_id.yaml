@@ -20,11 +20,11 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schema/components/Note.yaml'
+            $ref: '../schema/components/note.yaml'
     '404':
-      $ref: '../schema/responses/NotFound.yaml'
+      $ref: '../schema/responses/not_found.yaml'
     '500':
-      $ref: '../schema/responses/InternalServerError.yaml'
+      $ref: '../schema/responses/internal_server_error.yaml'
 
 put:
   tags:
@@ -41,20 +41,20 @@ put:
     content:
       application/json:
         schema:
-          $ref: '../schema/requests/UpdateNoteRequest.yaml'
+          $ref: '../schema/requests/update_note_request.yaml'
   responses:
     '200':
       description: Note updated successfully
       content:
         application/json:
           schema:
-            $ref: '../schema/components/Note.yaml'
+            $ref: '../schema/components/note.yaml'
     '400':
-      $ref: '../schema/responses/BadRequest.yaml'
+      $ref: '../schema/responses/bad_request.yaml'
     '404':
-      $ref: '../schema/responses/NotFound.yaml'
+      $ref: '../schema/responses/not_found.yaml'
     '500':
-      $ref: '../schema/responses/InternalServerError.yaml'
+      $ref: '../schema/responses/internal_server_error.yaml'
 
 delete:
   tags:
@@ -66,6 +66,6 @@ delete:
     '204':
       description: Note deleted successfully
     '404':
-      $ref: '../schema/responses/NotFound.yaml'
+      $ref: '../schema/responses/not_found.yaml'
     '500':
-      $ref: '../schema/responses/InternalServerError.yaml'
+      $ref: '../schema/responses/internal_server_error.yaml'

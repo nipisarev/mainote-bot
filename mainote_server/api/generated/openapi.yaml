@@ -1,0 +1,755 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: support@mainote.com
+    name: Mainote Team
+  description: |
+    REST API for Mainote Server - a note management service.
+
+    This API provides CRUD operations for managing notes with support for:
+    - Creating, reading, updating, and deleting notes
+    - Filtering by category, status, and chat ID
+    - Pagination for large result sets
+    - Rich metadata support using JSON
+
+    ## Authentication
+    Currently no authentication is required (development mode).
+
+    ## Rate Limiting
+    No rate limiting is currently implemented.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Mainote Server API
+  version: 1.0.0
+servers:
+- description: Development server
+  url: http://localhost:8081
+- description: Production server
+  url: https://mainote-server.fly.dev
+tags:
+- description: Health check operations
+  name: Health
+- description: Note management operations
+  externalDocs:
+    description: Find out more about notes
+    url: https://docs.mainote.com/notes
+  name: Notes
+paths:
+  /health:
+    get:
+      description: Check the health status of the service
+      operationId: checkHealth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/health_response'
+          description: Service is healthy
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/service_unavailable'
+          description: Service is unhealthy
+      summary: Health check
+      tags:
+      - Health
+  /api/v1/notes:
+    get:
+      description: |
+        Retrieve a paginated list of notes with optional filtering.
+
+        Supports filtering by:
+        - Chat ID (required)
+        - Category (optional)
+        - Status (optional)
+
+        Results are ordered by creation date (newest first).
+      operationId: listNotes
+      parameters:
+      - description: Telegram chat ID to filter notes by
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          example: "123456789"
+          maxLength: 50
+          type: string
+      - description: Filter notes by category
+        in: query
+        name: category
+        required: false
+        schema:
+          $ref: '#/components/schemas/note_category'
+      - description: Filter notes by status
+        in: query
+        name: status
+        required: false
+        schema:
+          $ref: '#/components/schemas/note_status'
+      - description: Maximum number of notes to return
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          example: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+      - description: Number of notes to skip for pagination
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          example: 0
+          minimum: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/notes_list_response'
+          description: List of notes retrieved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Bad request - validation error or malformed request
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: List notes
+      tags:
+      - Notes
+    post:
+      description: |
+        Create a new note.
+
+        The note will be assigned:
+        - A unique UUID as the ID
+        - Current timestamp for created_at and updated_at
+        - Default status of "active"
+        - Default source of "text" if not provided
+      operationId: createNote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_note_request'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+          description: Note created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Bad request - validation error or malformed request
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Create a note
+      tags:
+      - Notes
+  /api/v1/notes/{noteId}:
+    delete:
+      description: Delete a note by its ID
+      operationId: deleteNote
+      parameters:
+      - description: Unique identifier of the note
+        in: path
+        name: noteId
+        required: true
+        schema:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          type: string
+      responses:
+        "204":
+          description: Note deleted successfully
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Resource not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Delete a note
+      tags:
+      - Notes
+    get:
+      description: Retrieve a specific note by its ID
+      operationId: getNoteById
+      parameters:
+      - description: Unique identifier of the note
+        in: path
+        name: noteId
+        required: true
+        schema:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+          description: Note retrieved successfully
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Resource not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Get a note
+      tags:
+      - Notes
+    put:
+      description: |
+        Update an existing note.
+
+        All fields are optional - only provided fields will be updated.
+        The updated_at timestamp will be automatically updated.
+      operationId: updateNote
+      parameters:
+      - description: Unique identifier of the note
+        in: path
+        name: noteId
+        required: true
+        schema:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_note_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+          description: Note updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Bad request - validation error or malformed request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Resource not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Update a note
+      tags:
+      - Notes
+components:
+  responses:
+    BadRequest:
+      $ref: '#/components/responses/bad_request'
+    NotFound:
+      $ref: '#/components/responses/not_found'
+    InternalServerError:
+      $ref: '#/components/responses/internal_server_error'
+    ServiceUnavailable:
+      $ref: '#/components/responses/service_unavailable'
+    bad_request:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_response'
+      description: Bad request - validation error or malformed request
+    internal_server_error:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_response'
+      description: Internal server error
+    not_found:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_response'
+      description: Resource not found
+  schemas:
+    Note:
+      properties:
+        id:
+          description: Unique identifier for the note
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          readOnly: true
+          type: string
+        chat_id:
+          description: Telegram chat ID associated with the note
+          example: "123456789"
+          maxLength: 50
+          type: string
+        content:
+          description: The main content/text of the note
+          example: Remember to buy groceries after work
+          maxLength: 10000
+          minLength: 1
+          type: string
+        title:
+          description: Optional title for the note
+          example: Shopping List
+          maxLength: 500
+          nullable: true
+          type: string
+        category:
+          $ref: '#/components/schemas/note_category'
+        status:
+          $ref: '#/components/schemas/note_status'
+        source:
+          default: text
+          description: "Source of the note (e.g., 'text', 'voice', 'telegram_bot')"
+          example: telegram_bot
+          maxLength: 50
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata in JSON format
+          example:
+            user_id: user123
+            message_id: 42
+            thread_id: thread456
+          nullable: true
+          type: object
+        created_at:
+          description: Timestamp when the note was created
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          readOnly: true
+          type: string
+        updated_at:
+          description: Timestamp when the note was last updated
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          readOnly: true
+          type: string
+      required:
+      - category
+      - chat_id
+      - content
+      - created_at
+      - id
+      - source
+      - status
+      - updated_at
+      type: object
+    NoteCategory:
+      description: |
+        Category of the note:
+        * `idea` - Ideas, thoughts, inspirations
+        * `task` - Tasks, to-dos, reminders
+        * `personal` - Personal notes, diary entries
+      enum:
+      - idea
+      - task
+      - personal
+      example: idea
+      type: string
+    NoteStatus:
+      description: |
+        Status of the note:
+        * `active` - Active note (default)
+        * `done` - Completed/finished note
+        * `archived` - Archived/inactive note
+      enum:
+      - active
+      - done
+      - archived
+      example: active
+      type: string
+    HealthResponse:
+      properties:
+        status:
+          description: Overall health status
+          enum:
+          - healthy
+          - unhealthy
+          example: healthy
+          type: string
+        timestamp:
+          description: Timestamp of the health check
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          type: string
+        version:
+          description: Application version
+          example: 1.0.0
+          type: string
+        uptime:
+          description: Application uptime
+          example: 2h 30m 15s
+          type: string
+      required:
+      - status
+      - timestamp
+      type: object
+    ErrorResponse:
+      properties:
+        error:
+          description: Error type or category
+          example: validation_failed
+          type: string
+        message:
+          description: Human-readable error message
+          example: The content field is required
+          type: string
+        details:
+          additionalProperties: true
+          description: Additional error details
+          example:
+            field: content
+            code: required
+          nullable: true
+          type: object
+        timestamp:
+          description: Timestamp when the error occurred
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          type: string
+      required:
+      - error
+      - message
+      - timestamp
+      type: object
+    PaginationInfo:
+      properties:
+        total:
+          description: Total number of notes matching the filter
+          example: 150
+          minimum: 0
+          type: integer
+        limit:
+          description: Maximum number of notes per page
+          example: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        offset:
+          description: Number of notes skipped
+          example: 0
+          minimum: 0
+          type: integer
+        has_more:
+          description: Whether there are more notes available
+          example: true
+          type: boolean
+      required:
+      - has_more
+      - limit
+      - offset
+      - total
+      type: object
+    CreateNoteRequest:
+      properties:
+        chat_id:
+          description: Telegram chat ID associated with the note
+          example: "123456789"
+          maxLength: 50
+          type: string
+        content:
+          description: The main content/text of the note
+          example: Remember to buy groceries after work
+          maxLength: 10000
+          minLength: 1
+          type: string
+        title:
+          description: Optional title for the note
+          example: Shopping List
+          maxLength: 500
+          nullable: true
+          type: string
+        category:
+          $ref: '#/components/schemas/note_category'
+        source:
+          description: Source of the note
+          example: telegram_bot
+          maxLength: 50
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata in JSON format
+          example:
+            user_id: user123
+            message_id: 42
+          nullable: true
+          type: object
+      required:
+      - category
+      - chat_id
+      - content
+      type: object
+    UpdateNoteRequest:
+      description: All fields are optional for partial updates
+      properties:
+        content:
+          description: The main content/text of the note
+          example: Updated note content
+          maxLength: 10000
+          minLength: 1
+          type: string
+        title:
+          description: Optional title for the note
+          example: Updated Title
+          maxLength: 500
+          nullable: true
+          type: string
+        category:
+          $ref: '#/components/schemas/note_category'
+        status:
+          $ref: '#/components/schemas/note_status'
+        metadata:
+          additionalProperties: true
+          description: Additional metadata in JSON format
+          example:
+            updated: true
+            version: 2
+          nullable: true
+          type: object
+      type: object
+    NotesListResponse:
+      properties:
+        notes:
+          description: Array of notes
+          items:
+            $ref: '#/components/schemas/Note'
+          type: array
+        pagination:
+          $ref: '#/components/schemas/pagination_info'
+      required:
+      - notes
+      - pagination
+      type: object
+    health_response:
+      properties:
+        status:
+          description: Overall health status
+          enum:
+          - healthy
+          - unhealthy
+          example: healthy
+          type: string
+        timestamp:
+          description: Timestamp of the health check
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          type: string
+        version:
+          description: Application version
+          example: 1.0.0
+          type: string
+        uptime:
+          description: Application uptime
+          example: 2h 30m 15s
+          type: string
+      required:
+      - status
+      - timestamp
+      type: object
+    service_unavailable:
+      description: Service is unhealthy
+      type: object
+    note_category:
+      description: |
+        Category of the note:
+        * `idea` - Ideas, thoughts, inspirations
+        * `task` - Tasks, to-dos, reminders
+        * `personal` - Personal notes, diary entries
+      enum:
+      - idea
+      - task
+      - personal
+      example: idea
+      type: string
+    note_status:
+      description: |
+        Status of the note:
+        * `active` - Active note (default)
+        * `done` - Completed/finished note
+        * `archived` - Archived/inactive note
+      enum:
+      - active
+      - done
+      - archived
+      example: active
+      type: string
+    notes_list_response:
+      properties:
+        notes:
+          description: Array of notes
+          items:
+            $ref: '#/components/schemas/Note'
+          type: array
+        pagination:
+          $ref: '#/components/schemas/pagination_info'
+      required:
+      - notes
+      - pagination
+      type: object
+    error_response:
+      properties:
+        error:
+          description: Error type or category
+          example: validation_failed
+          type: string
+        message:
+          description: Human-readable error message
+          example: The content field is required
+          type: string
+        details:
+          additionalProperties: true
+          description: Additional error details
+          example:
+            field: content
+            code: required
+          nullable: true
+          type: object
+        timestamp:
+          description: Timestamp when the error occurred
+          example: 2025-06-08T10:30:00Z
+          format: date-time
+          type: string
+      required:
+      - error
+      - message
+      - timestamp
+      type: object
+    create_note_request:
+      properties:
+        chat_id:
+          description: Telegram chat ID associated with the note
+          example: "123456789"
+          maxLength: 50
+          type: string
+        content:
+          description: The main content/text of the note
+          example: Remember to buy groceries after work
+          maxLength: 10000
+          minLength: 1
+          type: string
+        title:
+          description: Optional title for the note
+          example: Shopping List
+          maxLength: 500
+          nullable: true
+          type: string
+        category:
+          $ref: '#/components/schemas/note_category'
+        source:
+          description: Source of the note
+          example: telegram_bot
+          maxLength: 50
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata in JSON format
+          example:
+            user_id: user123
+            message_id: 42
+          nullable: true
+          type: object
+      required:
+      - category
+      - chat_id
+      - content
+      type: object
+    update_note_request:
+      description: All fields are optional for partial updates
+      properties:
+        content:
+          description: The main content/text of the note
+          example: Updated note content
+          maxLength: 10000
+          minLength: 1
+          type: string
+        title:
+          description: Optional title for the note
+          example: Updated Title
+          maxLength: 500
+          nullable: true
+          type: string
+        category:
+          $ref: '#/components/schemas/note_category'
+        status:
+          $ref: '#/components/schemas/note_status'
+        metadata:
+          additionalProperties: true
+          description: Additional metadata in JSON format
+          example:
+            updated: true
+            version: 2
+          nullable: true
+          type: object
+      type: object
+    pagination_info:
+      properties:
+        total:
+          description: Total number of notes matching the filter
+          example: 150
+          minimum: 0
+          type: integer
+        limit:
+          description: Maximum number of notes per page
+          example: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        offset:
+          description: Number of notes skipped
+          example: 0
+          minimum: 0
+          type: integer
+        has_more:
+          description: Whether there are more notes available
+          example: true
+          type: boolean
+      required:
+      - has_more
+      - limit
+      - offset
+      - total
+      type: object

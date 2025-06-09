@@ -14,9 +14,9 @@ properties:
     example: "Updated Title"
     maxLength: 500
   category:
-    $ref: '../components/NoteCategory.yaml'
+    $ref: '../components/note_category.yaml'
   status:
-    $ref: '../components/NoteStatus.yaml'
+    $ref: '../components/note_status.yaml'
   metadata:
     type: object
     nullable: true

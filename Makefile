@@ -1,16 +1,13 @@
 # Mainote Bot - Project Management Makefile
 # Organized script execution for development and production environments
 
-.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help install-cli restart reset
+.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help generate-api install-cli restart reset server-build server-run server-test server-clean server-fmt server-lint server-validate server-dev server-deps server-endpoints server-test-api server-structure server-docker-build server-docker-run install-tools
 
 # Default target
 .DEFAULT_GOAL := help
 
 help:
 	@echo "\033[34m🚀 Mainote Bot - Project Commands\033[0m"
-	@echo ""
-	@echo "Production:"
-	@echo "  make prod-start        Start production environment (via supervisord)"
 	@echo ""
 	@echo "Development (Local):"
 	@echo "  make dev-python        Start Python bot in development mode"
@@ -30,15 +27,26 @@ help:
 	@echo "  make docker-shell-go   Open shell in Go backend container"
 	@echo "  make docker-help       Show detailed Docker management options"
 	@echo ""
+	@echo "Go Server Development:"
+	@echo "  make server-build      Build Go server binary"
+	@echo "  make server-run        Run Go server in development mode"
+	@echo "  make server-test       Run Go server tests"
+	@echo "  make server-clean      Clean Go server generated files and binaries"
+	@echo "  make server-fmt        Format Go server code"
+	@echo "  make server-lint       Lint Go server code"
+	@echo "  make server-validate   Validate OpenAPI specification"
+	@echo "  make server-deps       Update Go server dependencies"
+	@echo "  make server-structure  Show Go server project structure"
+	@echo "  make server-docker-build  Build Go server Docker image"
+	@echo "  make server-docker-run    Run Go server Docker container"
+	@echo ""
 	@echo "Project Management:"
+	@echo "  make generate-api      Generate Go API code from OpenAPI specification"
+	@echo "  make install-tools     Check required tools are installed"
 	@echo "  make scripts-help      Show scripts directory structure"
 	@echo "  make install-cli       Install mainote-cli command globally"
 	@echo ""
 
-# Production Commands
-prod-start:
-	@echo "\033[32mStarting production environment...\033[0m"
-	@./scripts/production/start.sh
 
 # Development Commands (Local)
 dev-python:
@@ -90,13 +98,74 @@ docker-help:
 	@echo "\033[34mDocker management help:\033[0m"
 	@./scripts/docker/dev-docker.sh help
 
-# Information Commands
-scripts-help:
-	@echo "\033[32mScripts directory structure:\033[0m"
-	@cat ./scripts/README.md
+# Go Server Development Commands
+server-build: server-generate ## Build Go server binary
+	@echo "\033[32m🔨 Building Go server...\033[0m"
+	@cd mainote_server && go build -o bin/server cmd/server/main.go
+	@echo "\033[32m✅ Server built successfully\033[0m"
+
+server-run: ## Run Go server in development mode
+	@echo "\033[32m🚀 Starting Go server on port $(GO_PORT)...\033[0m"
+	@cd mainote_server && GO_PORT=$(GO_PORT) go run cmd/server/main.go
+
+server-test: ## Run Go server tests
+	@echo "\033[32m🧪 Running Go server tests...\033[0m"
+	@cd mainote_server && go test ./...
+
+server-clean: ## Clean Go server generated files and build artifacts
+	@echo "\033[31m🧹 Cleaning Go server files...\033[0m"
+	@source ./scripts/development/openapi.sh && clean
+	@cd mainote_server && rm -f bin/server
+	@echo "\033[32m✅ Go server cleanup completed\033[0m"
+
+server-fmt: ## Format Go server code
+	@echo "\033[32m🎨 Formatting Go server code...\033[0m"
+	@cd mainote_server && go fmt ./...
+
+server-lint: ## Lint Go server code (requires golangci-lint)
+	@echo "\033[32m🔍 Linting Go server code...\033[0m"
+	@cd mainote_server && golangci-lint run
+
+server-validate: ## Validate Go server OpenAPI specification
+	@echo "\033[32m✅ Validating Go server OpenAPI spec...\033[0m"
+	@cd mainote_server && oapi-codegen -generate types -o /dev/null api/src.yaml
+	@echo "\033[32m✅ OpenAPI specification is valid\033[0m"
+
+server-deps: ## Update Go server dependencies
+	@echo "\033[32m📦 Updating Go server dependencies...\033[0m"
+	@cd mainote_server && go mod tidy
+	@cd mainote_server && go mod download
+	@echo "\033[32m✅ Go server dependencies updated\033[0m"
+
+server-structure: ## Show Go server project structure
+	@echo "\033[32m📁 Go server project structure:\033[0m"
+	@cd mainote_server && (tree -I 'node_modules|.git|*.gen.go' . || ls -la)
+
+server-docker-build: ## Build Go server Docker image
+	@echo "\033[32m🐳 Building Go server Docker image...\033[0m"
+	@docker build -f extra/build/dockerfile/dev/Dockerfile.server -t mainote-server:dev mainote_server
+
+server-docker-run: ## Run Go server Docker container
+	@echo "\033[32m🐳 Running Go server Docker container...\033[0m"
+	@cd mainote_server && docker run -p $(GO_PORT):8081 mainote-server:dev
+
+server-generate: install-tools ## Generate Go server API code from OpenAPI specification
+	@echo "\033[32m🔄 Generating Go server API code from OpenAPI specification...\033[0m"
+	@source ./scripts/development/openapi.sh && generate_api
+	@echo "\033[32m✅ Go server API code generation completed successfully!\033[0m"
+
+# Project Management Commands
+install-tools: ## Check required tools are installed
+	@echo "\033[32m🔍 Checking required tools...\033[0m"
+	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker is required but not installed. Please install Docker."; exit 1; }
+	@echo "\033[32m✅ Docker found\033[0m"
+	@echo "\033[32m✅ All required tools are available\033[0m"
+
+# API Generation (alias for server-generate for backward compatibility)
+generate-api: server-generate ## Generate Go API code from OpenAPI specification (alias for server-generate)
 
 # CLI Installation
-install-cli:
+install-cli: ## Install mainote-cli command globally
 	@echo "\033[32mInstalling mainote-cli command...\033[0m"
 	@chmod +x ./mainote-cli
 	@sudo ln -sf "$(PWD)/mainote-cli" /usr/local/bin/mainote-cli

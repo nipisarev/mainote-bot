@@ -1,0 +1,153 @@
+# Notes CRUD Endpoints
+
+notes:
+  get:
+    tags:
+      - Notes
+    summary: List notes
+    description: |
+      Retrieve a paginated list of notes with optional filtering.
+      
+      Supports filtering by:
+      - Chat ID (required)
+      - Category (optional)
+      - Status (optional)
+      
+      Results are ordered by creation date (newest first).
+    operationId: listNotes
+    parameters:
+      - $ref: '../components/parameters.yaml#/ChatIdQueryParam'
+      - $ref: '../components/parameters.yaml#/CategoryQueryParam'
+      - $ref: '../components/parameters.yaml#/StatusQueryParam'
+      - $ref: '../components/parameters.yaml#/LimitQueryParam'
+      - $ref: '../components/parameters.yaml#/OffsetQueryParam'
+    responses:
+      '200':
+        description: List of notes retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/NotesListResponse'
+            examples:
+              notes_list:
+                $ref: '../components/examples.yaml#/NotesListExample'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  post:
+    tags:
+      - Notes
+    summary: Create a note
+    description: |
+      Create a new note.
+      
+      The note will be assigned:
+      - A unique UUID as the ID
+      - Current timestamp for created_at and updated_at
+      - Default status of "active"
+      - Default source of "text" if not provided
+    operationId: createNote
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/CreateNoteRequest'
+          examples:
+            idea_note:
+              $ref: '../components/examples.yaml#/CreateIdeaNoteExample'
+            task_note:
+              $ref: '../components/examples.yaml#/CreateTaskNoteExample'
+    responses:
+      '201':
+        description: Note created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Note'
+            examples:
+              created_note:
+                $ref: '../components/examples.yaml#/CreatedNoteExample'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+notes-by-id:
+  parameters:
+    - $ref: '../components/parameters.yaml#/NoteIdPathParam'
+
+  get:
+    tags:
+      - Notes
+    summary: Get a note
+    description: Retrieve a specific note by its ID
+    operationId: getNoteById
+    responses:
+      '200':
+        description: Note retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Note'
+            examples:
+              note:
+                $ref: '../components/examples.yaml#/NoteExample'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  put:
+    tags:
+      - Notes
+    summary: Update a note
+    description: |
+      Update an existing note.
+      
+      All fields are optional - only provided fields will be updated.
+      The updated_at timestamp will be automatically updated.
+    operationId: updateNote
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/UpdateNoteRequest'
+          examples:
+            update_content:
+              $ref: '../components/examples.yaml#/UpdateNoteContentExample'
+            update_status:
+              $ref: '../components/examples.yaml#/UpdateNoteStatusExample'
+    responses:
+      '200':
+        description: Note updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas.yaml#/Note'
+            examples:
+              updated_note:
+                $ref: '../components/examples.yaml#/UpdatedNoteExample'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  delete:
+    tags:
+      - Notes
+    summary: Delete a note
+    description: Delete a note by its ID
+    operationId: deleteNote
+    responses:
+      '204':
+        description: Note deleted successfully
+      '404':
+        $ref: '../components/responses.yaml#/NotFound'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

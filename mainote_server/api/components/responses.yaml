@@ -1,0 +1,66 @@
+# Reusable Response Components
+
+BadRequest:
+  description: Bad request - validation error or malformed request
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/ErrorResponse'
+      examples:
+        validation_error:
+          summary: Validation error example
+          value:
+            error: "validation_failed"
+            message: "The content field is required and cannot be empty"
+            details:
+              field: "content"
+              code: "required"
+            timestamp: "2025-06-08T10:30:00Z"
+        invalid_category:
+          summary: Invalid category example
+          value:
+            error: "invalid_parameter"
+            message: "Invalid category 'invalid'. Must be one of: idea, task, personal"
+            details:
+              field: "category"
+              allowed_values: ["idea", "task", "personal"]
+            timestamp: "2025-06-08T10:30:00Z"
+
+NotFound:
+  description: Resource not found
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/ErrorResponse'
+      examples:
+        note_not_found:
+          summary: Note not found example
+          value:
+            error: "not_found"
+            message: "Note with ID '550e8400-e29b-41d4-a716-446655440000' not found"
+            details:
+              resource: "note"
+              id: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2025-06-08T10:30:00Z"
+
+InternalServerError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/ErrorResponse'
+      examples:
+        server_error:
+          summary: Internal server error example
+          value:
+            error: "internal_server_error"
+            message: "An unexpected error occurred. Please try again later."
+            timestamp: "2025-06-08T10:30:00Z"
+        database_error:
+          summary: Database connection error example
+          value:
+            error: "database_error"
+            message: "Unable to connect to the database"
+            details:
+              type: "connection_timeout"
+            timestamp: "2025-06-08T10:30:00Z"

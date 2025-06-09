@@ -7,6 +7,7 @@ app = 'mainote-bot'
 primary_region = 'cdg'
 
 [build]
+  dockerfile = "extra/build/dockerfile/production/Dockerfile"
 
 [env]
   PORT = "8080"

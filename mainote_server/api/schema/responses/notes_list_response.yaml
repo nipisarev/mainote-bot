@@ -6,7 +6,7 @@ properties:
   notes:
     type: array
     items:
-      $ref: '../components/Note.yaml'
+      $ref: '../components/note.yaml'
     description: Array of notes
   pagination:
-    $ref: '../components/PaginationInfo.yaml'
+    $ref: '../components/pagination_info.yaml'

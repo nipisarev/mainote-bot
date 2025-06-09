@@ -10,10 +10,10 @@ get:
       content:
         application/json:
           schema:
-            $ref: '../schema/components/HealthResponse.yaml'
+            $ref: '../schema/components/health_response.yaml'
     '503':
       description: Service is unhealthy
       content:
         application/json:
           schema:
-            $ref: '../schema/responses/ServiceUnavailable.yaml'
+            $ref: '../schema/responses/service_unavailable.yaml'

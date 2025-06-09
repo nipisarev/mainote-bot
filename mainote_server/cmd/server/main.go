@@ -12,7 +12,7 @@ import (
 	"mainote-backend/internal/config"
 	"mainote-backend/internal/delivery/http/handler"
 	"mainote-backend/internal/delivery/http/middleware"
-	"mainote-backend/internal/usecase"
+	api "mainote-backend/pkg/generated"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
@@ -33,10 +33,12 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	// Initialize use cases
-	healthUseCase := usecase.NewHealthUseCase()
+	// healthUseCase := usecase.NewHealthUseCase() // TODO: Implement this
+	// noteUsecase := usecase.NewNoteUsecase(nil)  // TODO: Implement repository
 
 	// Initialize handlers
-	healthHandler := handler.NewHealthHandler(healthUseCase)
+	// healthHandler := handler.NewHealthHandler(healthUseCase) // TODO: Implement this
+	noteHandler := handler.NewNoteHandler(nil) // TODO: Pass proper usecase
 
 	// Setup routes
 	router := mux.NewRouter()
@@ -45,8 +47,15 @@ func main() {
 	router.Use(middleware.LoggingMiddleware)
 	router.Use(middleware.SentryMiddleware)
 
-	// Register routes
-	router.HandleFunc("/health", healthHandler.CheckHealth).Methods("GET")
+	// Create API controllers with the new generated interfaces
+	healthController := api.NewHealthAPIController(noteHandler)
+	notesController := api.NewNotesAPIController(noteHandler)
+
+	// Register API routes using the new generated router
+	apiRouter := api.NewRouter(healthController, notesController)
+
+	// Mount the API routes under the main router
+	router.PathPrefix("/").Handler(apiRouter)
 
 	// Setup HTTP server
 	server := &http.Server{
