@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+mainote_server/tmp/
+var/
+
 # Python
 __pycache__/
 *.py[cod]
