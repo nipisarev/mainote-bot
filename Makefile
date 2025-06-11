@@ -1,7 +1,7 @@
 # Mainote Bot - Project Management Makefile
 # Organized script execution for development and production environments
 
-.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help generate-api install-cli restart reset server-build server-run server-test server-clean server-fmt server-lint server-validate server-dev server-deps server-endpoints server-test-api server-structure server-docker-build server-docker-run install-tools
+.PHONY: help prod-start dev-python dev-go docker-start docker-stop docker-restart docker-logs docker-build docker-clean docker-status docker-shell-bot docker-shell-go docker-help scripts-help generate-api install-cli restart reset server-build server-run server-test server-clean server-fmt server-lint server-validate server-dev server-deps server-endpoints server-test-api server-structure server-docker-build server-docker-run install-tools db-migrate db-info db-create db-validate db-repair db-reset db-undo db-test db-clean
 
 # Default target
 .DEFAULT_GOAL := help
@@ -39,6 +39,16 @@ help:
 	@echo "  make server-structure  Show Go server project structure"
 	@echo "  make server-docker-build  Build Go server Docker image"
 	@echo "  make server-docker-run    Run Go server Docker container"
+	@echo ""
+	@echo "Database Management:"
+	@echo "  make db-migrate        Apply database migrations using Flyway"
+	@echo "  make db-info           Show migration status and information"
+	@echo "  make db-create         Create new migration file"
+	@echo "  make db-validate       Validate applied migrations"
+	@echo "  make db-repair         Repair migration metadata table"
+	@echo "  make db-reset          Reset database (development only - DANGEROUS!)"
+	@echo "  make db-undo           Undo last applied migration"
+	@echo "  make db-test           Test migrations (apply and rollback)"
 	@echo ""
 	@echo "Project Management:"
 	@echo "  make generate-api      Generate Go API code from OpenAPI specification"
@@ -172,11 +182,39 @@ install-cli: ## Install mainote-cli command globally
 	@echo "\033[32m✅ mainote-cli installed successfully!\033[0m"
 	@echo "You can now use 'mainote-cli' from anywhere in your terminal."
 
-# Convenience Commands
-restart:
-	@echo "\033[34mRestarting Docker development environment...\033[0m"
-	@./scripts/docker/dev-docker.sh restart
+# Database Management Commands
+db-migrate: ## Apply database migrations using Flyway
+	@echo "\033[32mApplying database migrations...\033[0m"
+	@./scripts/database/flyway.sh migrate
 
-reset:
-	@echo "\033[31mResetting Docker environment (clean + build + start)...\033[0m"
-	@./scripts/docker/dev-docker.sh reset
+db-info: ## Show migration status and information
+	@echo "\033[32mShowing migration information...\033[0m"
+	@./scripts/database/flyway.sh info
+
+db-create: ## Create new migration file (usage: make db-create DESCRIPTION="Add users table")
+	@echo "\033[32mCreating new migration file...\033[0m"
+	@if [ -z "$(DESCRIPTION)" ]; then \
+		echo "\033[31mError: DESCRIPTION is required\033[0m"; \
+		echo "Usage: make db-create DESCRIPTION=\"Add users table\""; \
+		exit 1; \
+	fi
+	@./scripts/database/flyway.sh create "$(DESCRIPTION)"
+
+db-validate: ## Validate applied migrations against available ones
+	@echo "\033[32mValidating migrations...\033[0m"
+	@./scripts/database/flyway.sh validate
+
+db-repair: ## Repair migration metadata table
+	@echo "\033[32mRepairing migration metadata...\033[0m"
+	@./scripts/database/flyway.sh repair
+
+db-reset: ## Reset database (development only - DANGEROUS!)
+	@echo "\033[31m⚠️  WARNING: This will destroy all data in the database!\033[0m"
+	@./scripts/database/flyway.sh reset
+
+db-undo: ## Undo last applied migration
+	@echo "\033[32mUndoing last migration...\033[0m"
+	@./scripts/database/flyway.sh undo
+
+db-test: ## Test migrations (apply and rollback)
+	@echo "\033[32mTesting migrations...\033

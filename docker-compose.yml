@@ -50,6 +50,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Flyway Database Migrations
+  flyway:
+    image: flyway/flyway:10.10.0
+    container_name: mainote_flyway
+    command: -url=jdbc:postgresql://postgres:5432/mainote -user=mainote -password=mainote_dev_password -locations=filesystem:/flyway/sql migrate
+    volumes:
+      - ./db/sql:/flyway/sql
+      - ./db/flyway.conf:/flyway/conf/flyway.conf
+    networks:
+      - mainote_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - migration
+
   # Python Bot Service
   python-bot:
     build:

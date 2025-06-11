@@ -1,17 +1,12 @@
 #!/bin/bash
 
-# Wait for database to be ready
-echo "Waiting for database to be ready..."
-sleep 5
+# Production startup script with Flyway migrations
 
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
+set -e
 
-# Run migrations
+# Wait for database to be ready and run migrations
 echo "Running database migrations..."
-export SQLALCHEMY_URL="$DATABASE_URL"
-alembic upgrade head
+/app/scripts/production/migrate.sh migrate
 
 # Start the application
 echo "Starting application..."

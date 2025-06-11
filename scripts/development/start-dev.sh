@@ -9,9 +9,9 @@ while ! pg_isready -h postgres -p 5432 -U mainote -d mainote; do
 done
 echo "PostgreSQL is ready!"
 
-echo "Running database migrations..."
-export SQLALCHEMY_URL="$DATABASE_URL"
-alembic upgrade head
+echo "Running database migrations with Flyway..."
+# Run migrations using the Flyway script
+/app/scripts/database/flyway.sh migrate
 
 echo "Starting application with auto-reload..."
 exec gunicorn --bind 0.0.0.0:8080 \

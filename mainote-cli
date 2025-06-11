@@ -44,6 +44,14 @@ show_cli_help() {
     echo "  dev-python         Start Python bot locally"
     echo "  dev-go             Start Go backend locally"
     echo ""
+    echo -e "${GREEN}Database Commands:${NC}"
+    echo "  db-migrate         Apply database migrations"
+    echo "  db-info            Show migration status"
+    echo "  db-create          Create new migration file"
+    echo "  db-validate        Validate migrations"
+    echo "  db-repair          Repair migration metadata"
+    echo "  db-reset           Reset database (development only)"
+    echo ""
     echo -e "${GREEN}Docker Commands:${NC}"
     echo "  start              Start Docker development environment"
     echo "  stop               Stop Docker development environment"
@@ -104,6 +112,38 @@ case "${1:-help}" in
     "generate-api")
         # Shortcut for generate_api
         make generate-api
+        ;;
+    "db-migrate")
+        # Run database migrations
+        "$PROJECT_DIR/scripts/database/flyway.sh" migrate
+        ;;
+    "db-info")
+        # Show migration info
+        "$PROJECT_DIR/scripts/database/flyway.sh" info
+        ;;
+    "db-create")
+        # Create new migration
+        "$PROJECT_DIR/scripts/database/flyway.sh" create "$2"
+        ;;
+    "db-validate")
+        # Validate migrations
+        "$PROJECT_DIR/scripts/database/flyway.sh" validate
+        ;;
+    "db-repair")
+        # Repair migration metadata
+        "$PROJECT_DIR/scripts/database/flyway.sh" repair
+        ;;
+    "db-reset")
+        # Reset database (development only)
+        "$PROJECT_DIR/scripts/database/flyway.sh" reset
+        ;;
+    "db-undo")
+        # Undo last migration
+        "$PROJECT_DIR/scripts/database/flyway.sh" undo
+        ;;
+    "db-test")
+        # Test migrations
+        "$PROJECT_DIR/scripts/database/flyway.sh" test
         ;;
     "install")
         # Self-installation

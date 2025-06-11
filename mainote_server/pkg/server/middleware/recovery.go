@@ -8,9 +8,18 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/rs/zerolog/log"
-
-	logutil "github.com/qase-tms/qase-services/utils/logger"
 )
+
+// Custom context keys and types to replace logutil dependency
+const (
+	CtxErrInfoKey contextKey = "errInfo"
+)
+
+// ErrInfo holds error information for logging
+type ErrInfo struct {
+	IsPanic bool
+	ErrType string
+}
 
 func Recovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,10 +33,10 @@ func Recovery(next http.Handler) http.Handler {
 				case string:
 					err = errors.New(v)
 				default:
-					err = errors.Errorf("error happend (%v)", v)
+					err = errors.Errorf("error happened (%v)", v)
 				}
 
-				ctx := context.WithValue(r.Context(), logutil.CtxErrInfoKey, logutil.ErrInfo{
+				ctx := context.WithValue(r.Context(), CtxErrInfoKey, ErrInfo{
 					IsPanic: true,
 					ErrType: reflect.TypeOf(err).String(),
 				})
