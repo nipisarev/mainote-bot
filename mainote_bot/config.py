@@ -23,7 +23,9 @@ SENTRY_DSN = os.getenv('SENTRY_DSN')
 # Morning Notification Configuration
 MORNING_NOTIFICATION_TIME = os.getenv('MORNING_NOTIFICATION_TIME', '08:00')
 NOTIFICATION_CHAT_IDS = os.getenv('NOTIFICATION_CHAT_IDS', '').split(',')
-ENABLE_MORNING_NOTIFICATIONS = 'true'
+# Morning notifications can be toggled via environment variable
+# Expect values like "true"/"false" (case-insensitive)
+ENABLE_MORNING_NOTIFICATIONS = os.getenv('ENABLE_MORNING_NOTIFICATIONS', 'true').lower() == 'true'
 
 # Note Categories
 NOTE_CATEGORIES = {

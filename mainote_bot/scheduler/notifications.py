@@ -179,9 +179,12 @@ def start_scheduler():
             return
 
         if ENABLE_MORNING_NOTIFICATIONS:
-            logger.info(f"Starting morning notification scheduler (time: {MORNING_NOTIFICATION_TIME}, recipients: {NOTIFICATION_CHAT_IDS})")
-            
+            logger.info(
+                f"Starting morning notification scheduler (time: {MORNING_NOTIFICATION_TIME}, recipients: {NOTIFICATION_CHAT_IDS})"
+            )
+
             # Create the scheduler task
+            asyncio.create_task(schedule_morning_notifications())
             scheduler_running = True
             logger.info("Scheduler task created and started")
         else:
