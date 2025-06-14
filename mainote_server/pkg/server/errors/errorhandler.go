@@ -7,8 +7,8 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/rs/zerolog/log"
 
-	"pkg/server"
-	"pkg/validator"
+	"mainote-backend/pkg/server"
+	"mainote-backend/pkg/validator"
 )
 
 type FieldProvider interface {
@@ -43,17 +43,8 @@ func ErrorHandler[ParsingError error, RequiredError FieldProvider, ImplResponse 
 		})
 	default:
 		errorCode := http.StatusInternalServerError
-		var errorBody any = ErrorResponse{
+		errorBody := ErrorResponse{
 			ErrorMessage: "Internal error.",
-		}
-		if result != nil {
-			baseResponse := hlp.CastPtrUnsafe[server.ImplResponse](result)
-			if baseResponse.Code != 0 {
-				errorCode = baseResponse.Code
-			}
-			if baseResponse.Body != nil {
-				errorBody = baseResponse.Body
-			}
 		}
 
 		log.Error().Ctx(r.Context()).Err(err).Msg("Error response")
@@ -62,7 +53,7 @@ func ErrorHandler[ParsingError error, RequiredError FieldProvider, ImplResponse 
 }
 
 func sendErrorResponse(w http.ResponseWriter, r *http.Request, statusCode int, errResp any) {
-	if err := encodeJSONResponse(errResp, hlp.Ref(statusCode), w); err != nil {
+	if err := encodeJSONResponse(errResp, &statusCode, w); err != nil {
 		log.Error().Ctx(r.Context()).Err(err).Msg("Failed to send error response")
 	}
 }

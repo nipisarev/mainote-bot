@@ -3,26 +3,14 @@ package {{packageName}}
 
 import (
 	"encoding/json"
-    {{#isBodyParam}}
-        {{^required}}
-	"github.com/cockroachdb/errors"
-	"io"
-        {{/required}}
-    {{/isBodyParam}}
-	v "github.com/go-playground/validator/v10"
-	"pkg/validator"
+	"mainote-backend/pkg/server/middleware"
+	"mainote-backend/pkg/validator"
 	"net/http"
 	"strings"
-	"slices"
 
-{{#routers}}
-	{{#mux}}
+	v "github.com/go-playground/validator/v10"
+
 	"github.com/gorilla/mux"
-	{{/mux}}
-	{{#chi}}
-	"github.com/go-chi/chi/v5"
-	{{/chi}}
-{{/routers}}
 )
 
 // {{classname}}Controller binds http requests to an api service and writes the service results to the http response
@@ -93,6 +81,9 @@ func (c *{{classname}}Controller) Routes() Routes {
 // Deprecated
 {{/isDeprecated}}
 func (c *{{classname}}Controller) {{nickname}}(w http.ResponseWriter, r *http.Request) {
+	// Suppress unused import warnings
+	_ = json.Marshal
+	_ = mux.Vars
 	{{#hasFormParams}}
 	{{#isMultipart}}
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -377,11 +368,12 @@ func (c *{{classname}}Controller) {{nickname}}(w http.ResponseWriter, r *http.Re
 	{{/isArray}}
 	{{#isEnum}}
 	{{paramName}}AllowedValues := []string{ {{#schema.allowableValues.values}}"{{{.}}}",{{/schema.allowableValues.values}} }
-	{{paramName}}Param := query.Get("{{baseName}}")
-	if !slices.Contains({{paramName}}AllowedValues, {{paramName}}Param) {
+	{{paramName}}ParamStr := query.Get("{{baseName}}")
+	if {{paramName}}ParamStr != "" && !slices.Contains({{paramName}}AllowedValues, {{paramName}}ParamStr) {
 		c.errorHandler(w, r, &ParsingError{Err: errors.New("provided parameter has not allowed value")}, nil)
 		return
 	}
+	{{paramName}}Param := {{dataType}}({{paramName}}ParamStr)
 	{{/isEnum}}
 	{{^isNumber}}
 	{{^isFloat}}
@@ -398,7 +390,13 @@ func (c *{{classname}}Controller) {{nickname}}(w http.ResponseWriter, r *http.Re
 	}
 	{{/defaultValue}}
 	{{^defaultValue}}
-	{{paramName}}Param := query.Get("{{baseName}}")
+	{{paramName}}ParamStr := query.Get("{{baseName}}")
+	{{#dataType}}
+	{{paramName}}Param := {{dataType}}({{paramName}}ParamStr)
+	{{/dataType}}
+	{{^dataType}}
+	{{paramName}}Param := {{paramName}}ParamStr
+	{{/dataType}}
 	{{/defaultValue}}
 	{{/isEnum}}
 	{{/isArray}}

@@ -56,6 +56,7 @@ show_cli_help() {
     echo "  start              Start Docker development environment"
     echo "  stop               Stop Docker development environment"
     echo "  restart            Restart Docker development environment"
+    echo "  reset              Reset environment (stop + clean + build + start)"
     echo "  logs               Show Docker logs"
     echo "  status             Show Docker services status"
     echo "  shell              Open shell in Python bot container"
@@ -97,6 +98,29 @@ case "${1:-help}" in
         # Shortcut for restart
         make restart
         ;;
+    "reset")
+        # Reset environment: stop, clean, build, and start
+        echo -e "${BLUE}🔄 Resetting development environment...${NC}"
+        
+        # Stop all containers
+        echo -e "${YELLOW}Stopping containers...${NC}"
+        make docker-stop || true
+        
+        # Remove all containers and volumes
+        echo -e "${YELLOW}Cleaning up containers and volumes...${NC}"
+        docker compose down -v || true
+        
+        # Remove any dangling images
+        echo -e "${YELLOW}Cleaning up dangling images...${NC}"
+        docker image prune -f || true
+        
+        # Rebuild and start
+        echo -e "${YELLOW}Rebuilding and starting environment...${NC}"
+        make docker-build
+        make docker-start
+        
+        echo -e "${GREEN}✅ Environment reset complete!${NC}"
+        ;;
     "logs")
         # Shortcut for docker-logs
         make docker-logs
@@ -110,8 +134,9 @@ case "${1:-help}" in
         make docker-shell-bot
         ;;
     "generate-api")
-        # Shortcut for generate_api
-        make generate-api
+        # Generate API code using the script in scripts directory
+        echo -e "${BLUE}Generating API code...${NC}"
+        "${PROJECT_DIR}/scripts/openapi.sh" generate
         ;;
     "db-migrate")
         # Run database migrations

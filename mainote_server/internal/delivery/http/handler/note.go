@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"mainote-backend/internal/usecase"
-	api "mainote-backend/pkg/generated"
+	api "mainote-backend/pkg/generated/api"
 )
 
 // NoteHandler implements the generated API interfaces

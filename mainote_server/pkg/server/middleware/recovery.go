@@ -11,6 +11,8 @@ import (
 )
 
 // Custom context keys and types to replace logutil dependency
+type contextKey string
+
 const (
 	CtxErrInfoKey contextKey = "errInfo"
 )

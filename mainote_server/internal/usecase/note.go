@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"mainote-backend/internal/domain"
-	api "mainote-backend/pkg/generated"
+	api "mainote-backend/pkg/generated/api"
 )
 
 // NoteUsecase handles business logic for notes

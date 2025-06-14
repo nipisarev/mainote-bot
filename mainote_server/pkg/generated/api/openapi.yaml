@@ -313,6 +313,20 @@ components:
       description: Resource not found
   schemas:
     Note:
+      example:
+        metadata:
+          user_id: user123
+          message_id: 42
+          thread_id: thread456
+        updated_at: 2025-06-08T10:30:00Z
+        created_at: 2025-06-08T10:30:00Z
+        id: 550e8400-e29b-41d4-a716-446655440000
+        source: telegram_bot
+        title: Shopping List
+        category: idea
+        content: Remember to buy groceries after work
+        chat_id: "123456789"
+        status: active
       properties:
         id:
           description: Unique identifier for the note
@@ -403,6 +417,11 @@ components:
       example: active
       type: string
     HealthResponse:
+      example:
+        version: 1.0.0
+        status: healthy
+        timestamp: 2025-06-08T10:30:00Z
+        uptime: 2h 30m 15s
       properties:
         status:
           description: Overall health status
@@ -457,6 +476,11 @@ components:
       - timestamp
       type: object
     PaginationInfo:
+      example:
+        total: 150
+        offset: 0
+        limit: 10
+        has_more: true
       properties:
         total:
           description: Total number of notes matching the filter
@@ -485,6 +509,15 @@ components:
       - total
       type: object
     CreateNoteRequest:
+      example:
+        metadata:
+          user_id: user123
+          message_id: 42
+        source: telegram_bot
+        title: Shopping List
+        category: idea
+        content: Remember to buy groceries after work
+        chat_id: "123456789"
       properties:
         chat_id:
           description: Telegram chat ID associated with the note
@@ -525,6 +558,14 @@ components:
       type: object
     UpdateNoteRequest:
       description: All fields are optional for partial updates
+      example:
+        metadata:
+          updated: true
+          version: 2
+        title: Updated Title
+        category: idea
+        content: Updated note content
+        status: active
       properties:
         content:
           description: The main content/text of the note
@@ -552,6 +593,39 @@ components:
           type: object
       type: object
     NotesListResponse:
+      example:
+        notes:
+        - metadata:
+            user_id: user123
+            message_id: 42
+            thread_id: thread456
+          updated_at: 2025-06-08T10:30:00Z
+          created_at: 2025-06-08T10:30:00Z
+          id: 550e8400-e29b-41d4-a716-446655440000
+          source: telegram_bot
+          title: Shopping List
+          category: idea
+          content: Remember to buy groceries after work
+          chat_id: "123456789"
+          status: active
+        - metadata:
+            user_id: user123
+            message_id: 42
+            thread_id: thread456
+          updated_at: 2025-06-08T10:30:00Z
+          created_at: 2025-06-08T10:30:00Z
+          id: 550e8400-e29b-41d4-a716-446655440000
+          source: telegram_bot
+          title: Shopping List
+          category: idea
+          content: Remember to buy groceries after work
+          chat_id: "123456789"
+          status: active
+        pagination:
+          total: 150
+          offset: 0
+          limit: 10
+          has_more: true
       properties:
         notes:
           description: Array of notes
@@ -565,6 +639,11 @@ components:
       - pagination
       type: object
     health_response:
+      example:
+        version: 1.0.0
+        status: healthy
+        timestamp: 2025-06-08T10:30:00Z
+        uptime: 2h 30m 15s
       properties:
         status:
           description: Overall health status
@@ -618,6 +697,39 @@ components:
       example: active
       type: string
     notes_list_response:
+      example:
+        notes:
+        - metadata:
+            user_id: user123
+            message_id: 42
+            thread_id: thread456
+          updated_at: 2025-06-08T10:30:00Z
+          created_at: 2025-06-08T10:30:00Z
+          id: 550e8400-e29b-41d4-a716-446655440000
+          source: telegram_bot
+          title: Shopping List
+          category: idea
+          content: Remember to buy groceries after work
+          chat_id: "123456789"
+          status: active
+        - metadata:
+            user_id: user123
+            message_id: 42
+            thread_id: thread456
+          updated_at: 2025-06-08T10:30:00Z
+          created_at: 2025-06-08T10:30:00Z
+          id: 550e8400-e29b-41d4-a716-446655440000
+          source: telegram_bot
+          title: Shopping List
+          category: idea
+          content: Remember to buy groceries after work
+          chat_id: "123456789"
+          status: active
+        pagination:
+          total: 150
+          offset: 0
+          limit: 10
+          has_more: true
       properties:
         notes:
           description: Array of notes
@@ -659,6 +771,15 @@ components:
       - timestamp
       type: object
     create_note_request:
+      example:
+        metadata:
+          user_id: user123
+          message_id: 42
+        source: telegram_bot
+        title: Shopping List
+        category: idea
+        content: Remember to buy groceries after work
+        chat_id: "123456789"
       properties:
         chat_id:
           description: Telegram chat ID associated with the note
@@ -699,6 +820,14 @@ components:
       type: object
     update_note_request:
       description: All fields are optional for partial updates
+      example:
+        metadata:
+          updated: true
+          version: 2
+        title: Updated Title
+        category: idea
+        content: Updated note content
+        status: active
       properties:
         content:
           description: The main content/text of the note
@@ -726,6 +855,11 @@ components:
           type: object
       type: object
     pagination_info:
+      example:
+        total: 150
+        offset: 0
+        limit: 10
+        has_more: true
       properties:
         total:
           description: Total number of notes matching the filter

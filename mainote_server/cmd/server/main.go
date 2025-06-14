@@ -12,7 +12,7 @@ import (
 	"mainote-backend/internal/config"
 	"mainote-backend/internal/delivery/http/handler"
 	"mainote-backend/internal/delivery/http/middleware"
-	api "mainote-backend/pkg/generated"
+	api "mainote-backend/pkg/generated/api"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"

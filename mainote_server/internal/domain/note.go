@@ -3,7 +3,7 @@ package domain
 import (
 	"time"
 
-	api "mainote-backend/pkg/generated"
+	api "mainote-backend/pkg/generated/api"
 )
 
 // Note represents the domain model for a note

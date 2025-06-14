@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+.cursor/
+.cursor-rules
+
 mainote_server/tmp/
 var/
 
