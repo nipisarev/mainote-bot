@@ -291,8 +291,6 @@ components:
       $ref: '#/components/responses/not_found'
     InternalServerError:
       $ref: '#/components/responses/internal_server_error'
-    ServiceUnavailable:
-      $ref: '#/components/responses/service_unavailable'
     bad_request:
       content:
         application/json:
