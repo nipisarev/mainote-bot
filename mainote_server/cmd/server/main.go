@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -12,18 +13,37 @@ import (
 	"mainote-backend/internal/config"
 	"mainote-backend/internal/delivery/http/handler"
 	"mainote-backend/internal/delivery/http/middleware"
+	"mainote-backend/internal/repository"
+	"mainote-backend/internal/usecase"
 	api "mainote-backend/pkg/generated/api"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	// Load configuration
 	cfg := config.Load()
 
+	// Initialize database connection
+	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Test database connection
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	if err := db.PingContext(ctx); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
+	log.Println("Database connection established")
+
 	// Initialize Sentry
-	err := sentry.Init(sentry.ClientOptions{
+	err = sentry.Init(sentry.ClientOptions{
 		Dsn:         cfg.SentryDSN,
 		Environment: cfg.Environment,
 	})
@@ -32,13 +52,14 @@ func main() {
 	}
 	defer sentry.Flush(2 * time.Second)
 
+	// Initialize repository
+	noteRepo := repository.NewNoteRepository(db)
+
 	// Initialize use cases
-	// healthUseCase := usecase.NewHealthUseCase() // TODO: Implement this
-	// noteUsecase := usecase.NewNoteUsecase(nil)  // TODO: Implement repository
+	noteUsecase := usecase.NewNoteUsecase(noteRepo)
 
 	// Initialize handlers
-	// healthHandler := handler.NewHealthHandler(healthUseCase) // TODO: Implement this
-	noteHandler := handler.NewNoteHandler(nil) // TODO: Pass proper usecase
+	noteHandler := handler.NewNoteHandler(noteUsecase)
 
 	// Setup routes
 	router := mux.NewRouter()
@@ -81,10 +102,10 @@ func main() {
 	log.Println("Shutting down server...")
 
 	// Graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 

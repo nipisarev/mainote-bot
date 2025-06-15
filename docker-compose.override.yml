@@ -2,22 +2,22 @@
 # This file provides additional development-specific configurations
 
 services:
-  go-backend:
-    # Enable debugging
+  mainote-server:
     environment:
       - DEBUG=true
       - LOG_LEVEL=debug
-    # Add development labels
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
     labels:
       - "traefik.enable=false"
-      - "dev.service=go-backend"
+      - "dev.service=mainote-server"
 
-  python-bot:
-    # Enable debugging
+  mainote-bot:
     environment:
       - DEBUG=true
       - LOG_LEVEL=debug
-    # Add development labels
+    ports:
+      - "${BOT_PORT}:${BOT_PORT}"
     labels:
       - "traefik.enable=false"
-      - "dev.service=python-bot" 
+      - "dev.service=mainote-bot" 

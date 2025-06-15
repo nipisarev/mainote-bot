@@ -4,9 +4,9 @@ services:
     image: postgres:15-alpine
     container_name: mainote_postgres
     environment:
-      POSTGRES_DB: mainote
-      POSTGRES_USER: mainote
-      POSTGRES_PASSWORD: mainote_dev_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -15,27 +15,25 @@ services:
       - mainote_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mainote -d mainote"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # Go Backend Service
-  go-backend:
+  mainote-server:
     build:
       context: ./mainote_server
       dockerfile: ../extra/build/dockerfile/dev/Dockerfile.server
-    container_name: mainote_go_backend
+    container_name: mainote_server
     command: /app/scripts/development/start-go-dev.sh
     environment:
-      - GO_PORT=8081
-      - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote
+      - APP_PORT=${APP_PORT}
+      - DATABASE_URL=${DATABASE_URL}
       - ENVIRONMENT=development
       - SENTRY_DSN=${SENTRY_DSN:-}
-    ports:
-      - "8081:8081"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -54,7 +52,7 @@ services:
   flyway:
     image: flyway/flyway:10.10.0
     container_name: mainote_flyway
-    command: -url=jdbc:postgresql://postgres:5432/mainote -user=mainote -password=mainote_dev_password -locations=filesystem:/flyway/sql migrate
+    command: -url=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${POSTGRES_DB} -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD} -locations=filesystem:/flyway/sql migrate
     volumes:
       - ./db/sql:/flyway/sql
       - ./db/flyway.conf:/flyway/conf/flyway.conf
@@ -67,32 +65,30 @@ services:
       - migration
 
   # Python Bot Service
-  python-bot:
+  mainote-bot:
     build:
       context: .
       dockerfile: extra/build/dockerfile/dev/Dockerfile.bot
-    container_name: mainote_python_bot
+    container_name: mainote_bot
     command: /app/scripts/development/start-dev.sh
     environment:
-      - PORT=8080
-      - DATABASE_URL=postgresql://mainote:mainote_dev_password@postgres:5432/mainote
+      - PORT=${BOT_PORT}
+      - DATABASE_URL=${DATABASE_URL}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - NOTION_API_KEY=${NOTION_API_KEY}
       - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:8080}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:${BOT_PORT}}
       - MORNING_NOTIFICATION_TIME=${MORNING_NOTIFICATION_TIME:-08:00}
       - NOTIFICATION_CHAT_IDS=${NOTIFICATION_CHAT_IDS:-}
       - ENABLE_MORNING_NOTIFICATIONS=${ENABLE_MORNING_NOTIFICATIONS:-true}
       - SENTRY_DSN=${SENTRY_DSN:-}
-      - GO_BACKEND_URL=http://go-backend:8081
+      - GO_BACKEND_URL=http://mainote-server:${APP_PORT}
       - PYTHONUNBUFFERED=1
-    ports:
-      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
-      go-backend:
+      mainote-server:
         condition: service_started
     volumes:
       - .:/app

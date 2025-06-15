@@ -43,8 +43,21 @@ func ErrorHandler[ParsingError error, RequiredError FieldProvider, ImplResponse 
 		})
 	default:
 		errorCode := http.StatusInternalServerError
-		errorBody := ErrorResponse{
+		var errorBody any = ErrorResponse{
 			ErrorMessage: "Internal error.",
+		}
+
+		// Use response code and body if provided
+		if result != nil {
+			// Since ImplResponse is constrained to server.ImplResponse, we can use type assertion
+			if implResp, ok := any(result).(*server.ImplResponse); ok {
+				if implResp.Code != 0 {
+					errorCode = implResp.Code
+				}
+				if implResp.Body != nil {
+					errorBody = implResp.Body
+				}
+			}
 		}
 
 		log.Error().Ctx(r.Context()).Err(err).Msg("Error response")

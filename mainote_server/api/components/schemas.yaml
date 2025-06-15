@@ -42,8 +42,8 @@ Note:
       $ref: '#/NoteStatus'
     source:
       type: string
-      description: Source of the note (e.g., 'text', 'voice', 'telegram_bot')
-      example: "telegram_bot"
+      description: Source of the note (e.g., 'text', 'voice', 'telegram')
+      example: "telegram"
       default: "text"
       maxLength: 50
     metadata:
@@ -98,7 +98,7 @@ CreateNoteRequest:
     source:
       type: string
       description: Source of the note
-      example: "telegram_bot"
+      example: "telegram"
       maxLength: 50
     metadata:
       type: object

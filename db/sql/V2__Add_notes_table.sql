@@ -14,13 +14,7 @@ CREATE TABLE notes (
     voice_file_id TEXT,
     transcription TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign key constraint
-    CONSTRAINT fk_notes_chat_id 
-        FOREIGN KEY (chat_id) 
-        REFERENCES user_preferences(chat_id) 
-        ON DELETE CASCADE
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for better performance
@@ -28,9 +22,6 @@ CREATE INDEX idx_notes_chat_id ON notes(chat_id);
 CREATE INDEX idx_notes_created_at ON notes(created_at DESC);
 CREATE INDEX idx_notes_notion_page_id ON notes(notion_page_id) WHERE notion_page_id IS NOT NULL;
 CREATE INDEX idx_notes_voice_file_id ON notes(voice_file_id) WHERE voice_file_id IS NOT NULL;
-
--- Create full-text search index for content
-CREATE INDEX idx_notes_content_fts ON notes USING gin(to_tsvector('russian', content));
 
 -- Create trigger to automatically update updated_at column
 CREATE TRIGGER update_notes_updated_at 

@@ -319,7 +319,7 @@ components:
         updated_at: 2025-06-08T10:30:00Z
         created_at: 2025-06-08T10:30:00Z
         id: 550e8400-e29b-41d4-a716-446655440000
-        source: telegram_bot
+        source: telegram
         title: Shopping List
         category: idea
         content: Remember to buy groceries after work
@@ -355,8 +355,8 @@ components:
           $ref: '#/components/schemas/note_status'
         source:
           default: text
-          description: "Source of the note (e.g., 'text', 'voice', 'telegram_bot')"
-          example: telegram_bot
+          description: "Source of the note (e.g., 'text', 'voice', 'telegram')"
+          example: telegram
           maxLength: 50
           type: string
         metadata:
@@ -511,7 +511,7 @@ components:
         metadata:
           user_id: user123
           message_id: 42
-        source: telegram_bot
+        source: telegram
         title: Shopping List
         category: idea
         content: Remember to buy groceries after work
@@ -538,7 +538,7 @@ components:
           $ref: '#/components/schemas/note_category'
         source:
           description: Source of the note
-          example: telegram_bot
+          example: telegram
           maxLength: 50
           type: string
         metadata:
@@ -600,7 +600,7 @@ components:
           updated_at: 2025-06-08T10:30:00Z
           created_at: 2025-06-08T10:30:00Z
           id: 550e8400-e29b-41d4-a716-446655440000
-          source: telegram_bot
+          source: telegram
           title: Shopping List
           category: idea
           content: Remember to buy groceries after work
@@ -613,7 +613,7 @@ components:
           updated_at: 2025-06-08T10:30:00Z
           created_at: 2025-06-08T10:30:00Z
           id: 550e8400-e29b-41d4-a716-446655440000
-          source: telegram_bot
+          source: telegram
           title: Shopping List
           category: idea
           content: Remember to buy groceries after work
@@ -704,7 +704,7 @@ components:
           updated_at: 2025-06-08T10:30:00Z
           created_at: 2025-06-08T10:30:00Z
           id: 550e8400-e29b-41d4-a716-446655440000
-          source: telegram_bot
+          source: telegram
           title: Shopping List
           category: idea
           content: Remember to buy groceries after work
@@ -717,7 +717,7 @@ components:
           updated_at: 2025-06-08T10:30:00Z
           created_at: 2025-06-08T10:30:00Z
           id: 550e8400-e29b-41d4-a716-446655440000
-          source: telegram_bot
+          source: telegram
           title: Shopping List
           category: idea
           content: Remember to buy groceries after work
@@ -773,7 +773,7 @@ components:
         metadata:
           user_id: user123
           message_id: 42
-        source: telegram_bot
+        source: telegram
         title: Shopping List
         category: idea
         content: Remember to buy groceries after work
@@ -800,7 +800,7 @@ components:
           $ref: '#/components/schemas/note_category'
         source:
           description: Source of the note
-          example: telegram_bot
+          example: telegram
           maxLength: 50
           type: string
         metadata:

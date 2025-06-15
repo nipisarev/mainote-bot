@@ -173,16 +173,21 @@ EOF
 
 # Function to reset database (development only)
 reset_database() {
-    print_warning "This will DESTROY all data in the database!"
-    read -p "Are you sure you want to continue? (yes/no): " -r
-    
-    if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-        print_info "Operation cancelled."
-        exit 0
+    # Check if running in non-interactive mode (like from mainote-cli)
+    if [ ! -t 0 ] || [ "$FORCE_RESET" = "true" ]; then
+        print_warning "Running database reset in non-interactive mode..."
+    else
+        print_warning "This will DESTROY all data in the database!"
+        read -p "Are you sure you want to continue? (yes/no): " -r
+        
+        if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+            print_info "Operation cancelled."
+            exit 0
+        fi
     fi
     
-    print_info "Cleaning database..."
-    run_flyway clean
+    print_info "Cleaning database (overriding cleanDisabled for development reset)..."
+    run_flyway clean -cleanDisabled=false
     
     print_info "Re-applying all migrations..."
     run_flyway migrate

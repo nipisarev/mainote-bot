@@ -115,8 +115,8 @@ server-build: server-generate ## Build Go server binary
 	@echo "\033[32m✅ Server built successfully\033[0m"
 
 server-run: ## Run Go server in development mode
-	@echo "\033[32m🚀 Starting Go server on port $(GO_PORT)...\033[0m"
-	@cd mainote_server && GO_PORT=$(GO_PORT) go run cmd/server/main.go
+	@echo "\033[32m🚀 Starting Go server on port $(APP_PORT)...\033[0m"
+	@cd mainote_server && APP_PORT=$(APP_PORT) go run cmd/server/main.go
 
 server-test: ## Run Go server tests
 	@echo "\033[32m🧪 Running Go server tests...\033[0m"
@@ -157,7 +157,7 @@ server-docker-build: ## Build Go server Docker image
 
 server-docker-run: ## Run Go server Docker container
 	@echo "\033[32m🐳 Running Go server Docker container...\033[0m"
-	@cd mainote_server && docker run -p $(GO_PORT):8081 mainote-server:dev
+	@cd mainote_server && docker run -p $(APP_PORT):8081 mainote-server:dev
 
 server-generate: install-tools ## Generate Go server API code from OpenAPI specification
 	@echo "\033[32m🔄 Generating Go server API code from OpenAPI specification...\033[0m"
@@ -210,11 +210,11 @@ db-repair: ## Repair migration metadata table
 
 db-reset: ## Reset database (development only - DANGEROUS!)
 	@echo "\033[31m⚠️  WARNING: This will destroy all data in the database!\033[0m"
-	@./scripts/database/flyway.sh reset
+	@FORCE_RESET=$(FORCE_RESET) ./scripts/database/flyway.sh reset
 
 db-undo: ## Undo last applied migration
 	@echo "\033[32mUndoing last migration...\033[0m"
 	@./scripts/database/flyway.sh undo
 
 db-test: ## Test migrations (apply and rollback)
-	@echo "\033[32mTesting migrations...\033
+	@echo "\033[32mTesting migrations...\033"

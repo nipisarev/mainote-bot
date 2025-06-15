@@ -51,6 +51,7 @@ show_cli_help() {
     echo "  db-validate        Validate migrations"
     echo "  db-repair          Repair migration metadata"
     echo "  db-reset           Reset database (development only)"
+    echo "  db-proxy           Start database proxy (fly proxy to local port 35432)"
     echo ""
     echo -e "${GREEN}Docker Commands:${NC}"
     echo "  start              Start Docker development environment"
@@ -70,6 +71,7 @@ show_cli_help() {
     echo "  mainote-cli reset          # Reset environment (clean + build + start)"
     echo "  mainote-cli generate-api   # Generate API code from OpenAPI spec"
     echo "  mainote-cli dev-python     # Start Python bot locally"
+    echo "  mainote-cli db-proxy       # Start database proxy (connect to localhost:35432)"
     echo "  mainote-cli prod-start     # Start production environment"
     echo "  mainote-cli docker-clean   # Clean Docker environment"
     echo ""
@@ -119,6 +121,14 @@ case "${1:-help}" in
         make docker-build
         make docker-start
         
+        # Wait for database to be ready and reset/migrate
+        echo -e "${YELLOW}Waiting for database to be ready...${NC}"
+        sleep 10  # Give containers time to start
+        
+        echo -e "${YELLOW}Resetting and migrating database...${NC}"
+        # Set FORCE_RESET to skip interactive confirmation
+        FORCE_RESET=true make db-reset
+        
         echo -e "${GREEN}✅ Environment reset complete!${NC}"
         ;;
     "logs")
@@ -161,6 +171,15 @@ case "${1:-help}" in
     "db-reset")
         # Reset database (development only)
         "$PROJECT_DIR/scripts/database/flyway.sh" reset
+        ;;
+    "db-proxy")
+        # Start database proxy to connect to Fly PostgreSQL
+        echo -e "${BLUE}🔌 Starting database proxy...${NC}"
+        echo -e "${YELLOW}Connecting to Fly PostgreSQL database...${NC}"
+        echo -e "${YELLOW}Local connection will be available at: localhost:35432${NC}"
+        echo -e "${YELLOW}Press Ctrl+C to stop the proxy${NC}"
+        echo ""
+        flyctl proxy 35432:5432 -a mainote &
         ;;
     "db-undo")
         # Undo last migration

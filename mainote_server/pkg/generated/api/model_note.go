@@ -32,7 +32,7 @@ type Note struct {
 
 	Status NoteStatus `json:"status"`
 
-	// Source of the note (e.g., 'text', 'voice', 'telegram_bot')
+	// Source of the note (e.g., 'text', 'voice', 'telegram')
 	Source string `json:"source"`
 
 	// Additional metadata in JSON format

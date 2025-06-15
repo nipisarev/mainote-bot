@@ -343,8 +343,8 @@ components:
           $ref: '#/components/schemas/note_status'
         source:
           default: text
-          description: "Source of the note (e.g., 'text', 'voice', 'telegram_bot')"
-          example: telegram_bot
+          description: "Source of the note (e.g., 'text', 'voice', 'telegram')"
+          example: telegram
           maxLength: 50
           type: string
         metadata:
@@ -507,7 +507,7 @@ components:
           $ref: '#/components/schemas/note_category'
         source:
           description: Source of the note
-          example: telegram_bot
+          example: telegram
           maxLength: 50
           type: string
         metadata:
@@ -681,7 +681,7 @@ components:
           $ref: '#/components/schemas/note_category'
         source:
           description: Source of the note
-          example: telegram_bot
+          example: telegram
           maxLength: 50
           type: string
         metadata:
