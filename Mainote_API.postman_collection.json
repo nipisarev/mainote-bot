@@ -1,0 +1,483 @@
+{
+	"info": {
+		"_postman_id": "mainote-api-collection",
+		"name": "Mainote API",
+		"description": "REST API for Mainote Server - a note management service.\n\nThis collection provides endpoints for:\n- Creating, reading, updating, and deleting notes\n- Filtering by category, status, and chat ID\n- Health checks\n- Pagination for large result sets\n\nCurrently no authentication is required (development mode).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "mainote-team"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check the health status of the service"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints"
+		},
+		{
+			"name": "Notes",
+			"item": [
+				{
+					"name": "List Notes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes?chat_id={{chatId}}&limit=10&offset=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{chatId}}",
+									"description": "Telegram chat ID to filter notes by (required)"
+								},
+								{
+									"key": "category",
+									"value": "idea",
+									"description": "Filter notes by category (optional)",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"description": "Filter notes by status (optional)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Maximum number of notes to return (1-100, default: 10)"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of notes to skip for pagination (default: 0)"
+								}
+							]
+						},
+						"description": "Retrieve a paginated list of notes with optional filtering.\n\nSupports filtering by:\n- Chat ID (required)\n- Category (optional): idea, task, personal\n- Status (optional): active, archived, deleted\n\nResults are ordered by creation date (newest first)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"content\": \"Remember to buy groceries after work\",\n  \"title\": \"Shopping List\",\n  \"category\": \"task\",\n  \"source\": \"telegram\",\n  \"metadata\": {\n    \"user_id\": \"user123\",\n    \"message_id\": 42\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							]
+						},
+						"description": "Create a new note.\n\nThe note will be assigned:\n- A unique UUID as the ID\n- Current timestamp for created_at and updated_at\n- Default status of \"active\"\n- Default source of \"text\" if not provided\n\nRequired fields:\n- chat_id: Telegram chat ID\n- content: The main content/text of the note\n- category: One of 'idea', 'task', 'personal'\n\nOptional fields:\n- title: Optional title for the note\n- source: Source of the note\n- metadata: Additional metadata in JSON format"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note - Minimal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"content\": \"This is a simple note with minimal fields\",\n  \"category\": \"idea\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							]
+						},
+						"description": "Create a note with only the required fields"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note - Task",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"content\": \"Complete the quarterly report by Friday\",\n  \"title\": \"Q4 Report\",\n  \"category\": \"task\",\n  \"source\": \"telegram\",\n  \"metadata\": {\n    \"priority\": \"high\",\n    \"due_date\": \"2025-06-20\",\n    \"assignee\": \"john.doe\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							]
+						},
+						"description": "Create a task note with metadata"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note - Personal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"content\": \"Today was a great day. Had lunch with friends and finished an important project.\",\n  \"title\": \"Daily Journal\",\n  \"category\": \"personal\",\n  \"source\": \"manual\",\n  \"metadata\": {\n    \"mood\": \"happy\",\n    \"location\": \"home\",\n    \"tags\": [\"personal\", \"journal\", \"success\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							]
+						},
+						"description": "Create a personal note with rich metadata"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Note by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes",
+								"{{noteId}}"
+							]
+						},
+						"description": "Retrieve a specific note by its ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Note",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Updated note content with new information\",\n  \"title\": \"Updated Title\",\n  \"category\": \"task\",\n  \"status\": \"active\",\n  \"metadata\": {\n    \"updated\": true,\n    \"version\": 2,\n    \"last_modified_by\": \"user123\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes",
+								"{{noteId}}"
+							]
+						},
+						"description": "Update an existing note.\n\nAll fields are optional - only provided fields will be updated.\nThe updated_at timestamp will be automatically updated.\n\nUpdatable fields:\n- content: The main content/text of the note\n- title: Optional title for the note\n- category: One of 'idea', 'task', 'personal'\n- status: One of 'active', 'archived', 'deleted'\n- metadata: Additional metadata in JSON format"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Note - Partial",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"archived\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes",
+								"{{noteId}}"
+							]
+						},
+						"description": "Update only specific fields of a note (partial update)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Note",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes",
+								"{{noteId}}"
+							]
+						},
+						"description": "Delete a note by its ID"
+					},
+					"response": []
+				}
+			],
+			"description": "CRUD operations for notes"
+		},
+		{
+			"name": "Filtered Queries",
+			"item": [
+				{
+					"name": "Get Ideas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes?chat_id={{chatId}}&category=idea&limit=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{chatId}}"
+								},
+								{
+									"key": "category",
+									"value": "idea"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get all idea notes for a specific chat"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes?chat_id={{chatId}}&category=task&status=active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{chatId}}"
+								},
+								{
+									"key": "category",
+									"value": "task"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						},
+						"description": "Get all active task notes for a specific chat"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Personal Notes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes?chat_id={{chatId}}&category=personal&limit=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{chatId}}"
+								},
+								{
+									"key": "category",
+									"value": "personal"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Get all personal notes for a specific chat"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Archived Notes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes?chat_id={{chatId}}&status=archived",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"notes"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{chatId}}"
+								},
+								{
+									"key": "status",
+									"value": "archived"
+								}
+							]
+						},
+						"description": "Get all archived notes for a specific chat"
+					},
+					"response": []
+				}
+			],
+			"description": "Common filtered queries for different note types and statuses"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081",
+			"description": "Base URL for the Mainote API server"
+		},
+		{
+			"key": "chatId",
+			"value": "123456789",
+			"description": "Default Telegram chat ID for testing"
+		},
+		{
+			"key": "noteId",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"description": "Example note UUID for testing individual note operations"
+		}
+	]
+}
