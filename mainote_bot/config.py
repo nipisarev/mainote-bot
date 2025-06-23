@@ -7,9 +7,8 @@ load_dotenv()
 # Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-# Notion Configuration
-NOTION_API_KEY = os.getenv('NOTION_API_KEY')
-NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID')
+# Server Configuration
+SERVER_URL = os.getenv('MAINOTE_SERVER_URL', 'http://localhost:8081')
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -29,9 +28,9 @@ ENABLE_MORNING_NOTIFICATIONS = os.getenv('ENABLE_MORNING_NOTIFICATIONS', 'true')
 
 # Note Categories
 NOTE_CATEGORIES = {
-    'idea': '💡 Идея',
-    'task': '✅ Задача',
-    'personal': '🏖 Личное'
+    'idea': '💡 Idea',
+    'task': '✅ Task',
+    'personal': '🏖 Personal'
 }
 
 # Database Schema
@@ -45,4 +44,4 @@ NOTION_DB_SCHEMA = {
 }
 
 # Constants
-ERROR_PROCESSING_REQUEST = "Произошла ошибка при обработке запроса. Попробуйте позже."
+ERROR_PROCESSING_REQUEST = "An error occurred while processing the request. Please try again later."

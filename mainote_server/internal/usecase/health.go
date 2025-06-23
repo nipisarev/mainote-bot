@@ -3,7 +3,7 @@ package usecase
 import (
 	"time"
 
-	"mainote-backend/internal/domain"
+	"mainote-server/internal/domain"
 )
 
 type healthUseCase struct{}
@@ -19,6 +19,6 @@ func (h *healthUseCase) CheckHealth() *domain.HealthStatus {
 		Status:    "healthy",
 		Timestamp: time.Now(),
 		Version:   "1.0.0",
-		Service:   "mainote-backend",
+		Service:   "mainote-server",
 	}
 }

@@ -1,11 +1,11 @@
-from mainote_bot.database import init_db
+"""
+App module - Simplified version without database dependencies.
+This module is kept for compatibility but doesn't contain any functionality.
+"""
+from mainote_bot.utils.logging import logger
+
 
 async def start_webhook():
-    """Start the webhook server."""
-    try:
-        # Start the scheduler
-        start_scheduler()
-        logger.info("Scheduler started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start webhook: {e}")
-        raise 
+    """Stub function - webhook starting is handled in main.py."""
+    logger.info("Webhook start requested but handled elsewhere in simplified bot")
+    pass 

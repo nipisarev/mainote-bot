@@ -16,7 +16,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/gorilla/mux"
 	"io/ioutil"
-	"mainote-backend/pkg/server/middleware"
+	"mainote-server/pkg/server/middleware"
 	"mime/multipart"
 	"net/http"
 	"os"

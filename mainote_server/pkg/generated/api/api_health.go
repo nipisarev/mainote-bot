@@ -12,8 +12,8 @@ package api
 
 import (
 	"encoding/json"
-	"mainote-backend/pkg/server/middleware"
-	"mainote-backend/pkg/validator"
+	"mainote-server/pkg/server/middleware"
+	"mainote-server/pkg/validator"
 	"net/http"
 	"strings"
 

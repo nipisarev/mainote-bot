@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: mainote_postgres
@@ -20,7 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Go Backend Service
   mainote-server:
     build:
       context: ./mainote_server
@@ -48,7 +46,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Flyway Database Migrations
   flyway:
     image: flyway/flyway:10.10.0
     container_name: mainote_flyway
@@ -64,7 +61,6 @@ services:
     profiles:
       - migration
 
-  # Python Bot Service
   mainote-bot:
     build:
       context: .
@@ -83,7 +79,7 @@ services:
       - NOTIFICATION_CHAT_IDS=${NOTIFICATION_CHAT_IDS:-}
       - ENABLE_MORNING_NOTIFICATIONS=${ENABLE_MORNING_NOTIFICATIONS:-true}
       - SENTRY_DSN=${SENTRY_DSN:-}
-      - GO_BACKEND_URL=http://mainote-server:${APP_PORT}
+      - MAINOTE_SERVER_URL=http://mainote-server:${APP_PORT}
       - PYTHONUNBUFFERED=1
     depends_on:
       postgres:

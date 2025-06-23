@@ -1,0 +1,66 @@
+get:
+  tags:
+    - Users
+  summary: Find user by chat_id
+  description: |
+    Retrieves user information based on Telegram chat_id.
+    This endpoint is used to check if a user is already registered and associated with a specific chat_id.
+    Returns user data if found, or 404 if no user is associated with this chat_id.
+  operationId: getUserByChatId
+  parameters:
+    - name: chat_id
+      in: path
+      required: true
+      description: Telegram chat ID to search for
+      schema:
+        type: string
+        example: "123456789"
+        pattern: '^[0-9]+$'
+  responses:
+    "200":
+      description: User found for this chat_id
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/user_response.yaml"
+          examples:
+            user_found:
+              summary: User exists and is associated with chat_id
+              value:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                email: "user@example.com"
+                chat_id: "123456789"
+                created_at: "2025-06-22T10:30:00Z"
+                updated_at: "2025-06-22T10:30:00Z"
+    "404":
+      description: No user found for this chat_id
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+          examples:
+            user_not_found:
+              summary: No user associated with this chat_id
+              value:
+                error: "User not found"
+                message: "No user is associated with chat_id 123456789"
+                code: "USER_NOT_FOUND"
+    "400":
+      description: Invalid chat_id format
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+          examples:
+            invalid_chat_id:
+              summary: Invalid chat_id format
+              value:
+                error: "Bad Request"
+                message: "chat_id must be a valid numeric string"
+                code: "INVALID_CHAT_ID"
+    "500":
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"

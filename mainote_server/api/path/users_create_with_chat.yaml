@@ -1,0 +1,42 @@
+post:
+  tags:
+    - Users
+  summary: Create a new user with auto-generated password and link to chat_id
+  description: Creates a new user with an auto-generated password and immediately links them to the provided chat_id.
+  operationId: createUserWithChat
+  requestBody:
+    description: User creation request with chat_id
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+            - email
+            - chat_id
+          properties:
+            email:
+              type: string
+              format: email
+              description: User's email address
+            chat_id:
+              type: string
+              description: Telegram chat ID to associate with the user
+  responses:
+    "201":
+      description: User created and linked successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/auth_user_response.yaml"
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "409":
+      description: User already exists
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"

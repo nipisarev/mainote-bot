@@ -1,0 +1,32 @@
+post:
+  tags:
+    - Users
+  summary: Create a new user
+  description: Creates a new user with the given email and password.
+  operationId: createUser
+  requestBody:
+    description: User object that needs to be added
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../schema/requests/create_user_request.yaml"
+  responses:
+    "201":
+      description: User created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/user_response.yaml"
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "409":
+      description: User already exists
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"

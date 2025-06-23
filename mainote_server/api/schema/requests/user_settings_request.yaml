@@ -1,0 +1,21 @@
+type: object
+properties:
+  user_id:
+    type: string
+    format: uuid
+    description: User ID to create settings for
+    example: "123e4567-e89b-12d3-a456-426614174000"
+  morning_notification_time:
+    type: string
+    description: Morning notification time in HH:MM format (e.g., "08:00")
+  timezone:
+    type: string
+    description: User's timezone (e.g., "UTC", "America/New_York", "Europe/London")
+    example: "UTC"
+  chat_id:
+    type: string
+    description: Telegram chat ID associated with the user
+    example: "123456789"
+required:
+  - user_id
+  - chat_id

@@ -1,0 +1,14 @@
+type: object
+properties:
+  apps:
+    type: array
+    items:
+      $ref: 'app_response.yaml'
+    description: List of available apps for installation
+  count:
+    type: integer
+    description: Total number of apps available
+    example: 1
+required:
+  - apps
+  - count

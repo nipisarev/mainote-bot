@@ -1,0 +1,7 @@
+go 1.23.3
+
+toolchain go1.23.3
+
+use (
+	./mainote_server
+)

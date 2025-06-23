@@ -1,0 +1,16 @@
+serverAddr = "frp.qase.dev"
+serverPort = 7002
+auth.method = "token"
+auth.token = "toughness3\\otorhinolaryngologist"
+transport.poolCount = 50
+transport.protocol = "quic"
+
+udpPacketSize = 1500
+
+[[proxies]]
+name = "web01"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 8080
+subdomain = "npisarev"
+hostHeaderRewrite = "npisarev.frp.qase.dev"

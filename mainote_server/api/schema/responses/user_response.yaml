@@ -1,0 +1,18 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  email:
+    type: string
+    format: email
+  chat_id:
+    type: string
+    description: Telegram chat ID associated with this user
+    example: "123456789"
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    type: string
+    format: date-time

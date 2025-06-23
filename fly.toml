@@ -11,8 +11,8 @@ primary_region = 'cdg'
 
 [env]
   PORT = "8080"
-  GO_BACKEND_PORT = "8081"
-  GO_BACKEND_URL = "http://localhost:8081"
+  MAINOTE_SERVER_PORT = "8081"
+  MAINOTE_SERVER_URL = "http://localhost:8081"
 
 # Main service (Python bot webhook endpoint)
 [http_service]
@@ -22,21 +22,6 @@ primary_region = 'cdg'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
-
-# Optional: Expose Go backend externally (for health checks, monitoring, etc.)
-# If you need external access to the Go backend, uncomment this section:
-# [[services]]
-#   internal_port = 8080
-#   protocol = "tcp"
-#   
-#   [[services.ports]]
-#     port = 8080
-#     handlers = ["http"]
-#   
-#   [services.concurrency]
-#     type = "connections"
-#     hard_limit = 25
-#     soft_limit = 20
 
 [[vm]]
   memory = '1gb'

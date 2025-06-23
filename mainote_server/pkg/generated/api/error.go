@@ -15,7 +15,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"net/http"
 
-	srvErrs "mainote-backend/pkg/server/errors"
+	srvErrs "mainote-server/pkg/server/errors"
 )
 
 var (

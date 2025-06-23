@@ -7,8 +7,8 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/rs/zerolog/log"
 
-	"mainote-backend/pkg/server"
-	"mainote-backend/pkg/validator"
+	"mainote-server/pkg/server"
+	"mainote-server/pkg/validator"
 )
 
 type FieldProvider interface {

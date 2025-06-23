@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -10,15 +9,15 @@ import (
 	"syscall"
 	"time"
 
-	"mainote-backend/internal/config"
-	"mainote-backend/internal/delivery/http/handler"
-	"mainote-backend/internal/delivery/http/middleware"
-	"mainote-backend/internal/repository"
-	"mainote-backend/internal/usecase"
-	api "mainote-backend/pkg/generated/api"
+	"mainote-server/internal/config"
+	"mainote-server/internal/delivery/http/handler"
+	"mainote-server/internal/delivery/http/middleware"
+	"mainote-server/internal/repository"
+	"mainote-server/internal/usecase"
+	api "mainote-server/pkg/generated/api"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -27,7 +26,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize database connection
-	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	db, err := sqlx.Connect("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -36,7 +35,7 @@ func main() {
 	// Test database connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := db.PingContext(ctx); err != nil {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
@@ -52,62 +51,61 @@ func main() {
 	}
 	defer sentry.Flush(2 * time.Second)
 
-	// Initialize repository
-	noteRepo := repository.NewNoteRepository(db)
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
+	appRepo := repository.NewAppRepository(db)
 
 	// Initialize use cases
-	noteUsecase := usecase.NewNoteUsecase(noteRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo)
+	appUsecase := usecase.NewAppUsecase(appRepo)
+	healthUsecase := usecase.NewHealthUseCase()
 
 	// Initialize handlers
-	noteHandler := handler.NewNoteHandler(noteUsecase)
+	userHandler := handler.NewUserHandler(userUsecase)
+	appHandler := handler.NewAppHandler(appUsecase)
+	healthHandler := handler.NewHealthHandler(healthUsecase)
 
 	// Setup routes
-	router := mux.NewRouter()
+	healthAPIService := healthHandler
+	usersAPIService := userHandler
+	appsAPIService := appHandler
+
+	healthAPIRouter := api.NewHealthAPIController(healthAPIService)
+	usersAPIRouter := api.NewUsersAPIController(usersAPIService)
+	appsAPIRouter := api.NewAppsAPIController(appsAPIService)
+
+	router := api.NewRouter(healthAPIRouter, usersAPIRouter, appsAPIRouter)
 
 	// Apply middleware
 	router.Use(middleware.LoggingMiddleware)
 	router.Use(middleware.SentryMiddleware)
 
-	// Create API controllers with the new generated interfaces
-	healthController := api.NewHealthAPIController(noteHandler)
-	notesController := api.NewNotesAPIController(noteHandler)
-
-	// Register API routes using the new generated router
-	apiRouter := api.NewRouter(healthController, notesController)
-
-	// Mount the API routes under the main router
-	router.PathPrefix("/").Handler(apiRouter)
-
-	// Setup HTTP server
+	// Start server
+	log.Println("Starting server on port", cfg.Port)
 	server := &http.Server{
-		Addr:         ":" + cfg.Port,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:    ":" + cfg.Port,
+		Handler: router,
 	}
 
-	// Start server in a goroutine
+	// Graceful shutdown
 	go func() {
-		log.Printf("Go backend server starting on port %s", cfg.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			log.Fatalf("Could not listen on %s: %v\n", cfg.Port, err)
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutting down server...")
+	// Listen for an interrupt or termination signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
 
-	// Graceful shutdown
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer shutdownCancel()
+	// Create a deadline to wait for.
+	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	server.Shutdown(ctx)
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-
-	log.Println("Server exited")
+	log.Println("Shutting down")
+	os.Exit(0)
 }

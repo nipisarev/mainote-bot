@@ -11,7 +11,7 @@
 package api
 
 import (
-	"mainote-backend/pkg/server"
+	"mainote-server/pkg/server"
 )
 
 // ImplResponse defines an implementation response with error code and the associated body

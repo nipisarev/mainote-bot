@@ -5,7 +5,6 @@ from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
 from telegram import Update
 from mainote_bot.utils.logging import logger
-from mainote_bot.database import get_pool
 
 router = APIRouter()
 
@@ -43,8 +42,7 @@ async def health(request: Request):
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "services": {
             "python_bot": {"status": "unknown"},
-            "database": {"status": "unknown"},
-            "go_backend": {"status": "unknown"}
+            "mainote_server": {"status": "unknown"}
         }
     }
     
@@ -76,67 +74,41 @@ async def health(request: Request):
         }
         overall_healthy = False
     
-    # Check PostgreSQL database
+    # Check Mainote server service
     try:
-        pool = await get_pool()
-        async with pool.acquire() as conn:
-            # Simple query to test database connectivity
-            result = await conn.fetchval('SELECT 1')
-            if result == 1:
-                health_status["services"]["database"] = {
-                    "status": "healthy",
-                    "type": "postgresql",
-                    "connection": "active"
-                }
-            else:
-                health_status["services"]["database"] = {
-                    "status": "unhealthy",
-                    "error": "Database query returned unexpected result"
-                }
-                overall_healthy = False
-    except Exception as e:
-        health_status["services"]["database"] = {
-            "status": "unhealthy",
-            "error": str(e),
-            "type": "postgresql"
-        }
-        overall_healthy = False
-    
-    # Check Go backend service
-    try:
-        go_backend_url = os.getenv('GO_BACKEND_URL', 'http://go-backend:8081')
+        mainote_server_url = os.getenv('MAINOTE_SERVER_URL', 'http://mainote-server:8081')
         timeout = httpx.Timeout(5.0)  # 5 second timeout
         
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(f"{go_backend_url}/health")
+            response = await client.get(f"{mainote_server_url}/health")
             
             if response.status_code == 200:
-                go_health_data = response.json()
-                health_status["services"]["go_backend"] = {
+                server_health_data = response.json()
+                health_status["services"]["mainote_server"] = {
                     "status": "healthy",
                     "response_time_ms": response.elapsed.total_seconds() * 1000,
-                    "backend_status": go_health_data.get("status", "unknown"),
-                    "backend_version": go_health_data.get("version", "unknown")
+                    "backend_status": server_health_data.get("status", "unknown"),
+                    "backend_version": server_health_data.get("version", "unknown")
                 }
             else:
-                health_status["services"]["go_backend"] = {
+                health_status["services"]["mainote_server"] = {
                     "status": "unhealthy",
                     "error": f"HTTP {response.status_code}",
-                    "url": go_backend_url
+                    "url": mainote_server_url
                 }
                 overall_healthy = False
     except httpx.TimeoutException:
-        health_status["services"]["go_backend"] = {
+        health_status["services"]["mainote_server"] = {
             "status": "unhealthy",
             "error": "Connection timeout",
-            "url": os.getenv('GO_BACKEND_URL', 'http://go-backend:8081')
+            "url": os.getenv('MAINOTE_SERVER_URL', 'http://mainote-server:8081')
         }
         overall_healthy = False
     except Exception as e:
-        health_status["services"]["go_backend"] = {
+        health_status["services"]["mainote_server"] = {
             "status": "unhealthy",
             "error": str(e),
-            "url": os.getenv('GO_BACKEND_URL', 'http://go-backend:8081')
+            "url": os.getenv('MAINOTE_SERVER_URL', 'http://mainote-server:8081')
         }
         overall_healthy = False
     

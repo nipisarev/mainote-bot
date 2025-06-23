@@ -1,0 +1,150 @@
+integrations:
+  post:
+    summary: Setup User Integration
+    description: |
+      Setup or update an integration for a specific user. Currently supports Notion integration.
+      The chat_id should be the Telegram chat_id for bot users.
+    tags:
+      - Integrations
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              chat_id:
+                type: string
+                description: The user's Telegram chat ID
+                example: "123456789"
+              provider:
+                type: string
+                enum: [notion, ticktick, jira]
+                description: The integration provider
+                example: "notion"
+              config:
+                type: object
+                description: Provider-specific configuration
+                properties:
+                  api_token:
+                    type: string
+                    description: API token for the provider
+                  database_id:
+                    type: string
+                    description: Database ID (for Notion)
+                  workspace_id:
+                    type: string
+                    description: Workspace ID (for other providers)
+                required:
+                  - api_token
+              auth_data:
+                type: object
+                description: Authentication data (OAuth tokens, etc.)
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+            required:
+              - chat_id
+              - provider
+              - config
+    responses:
+      '200':
+        description: Integration setup successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Integration setup successfully"
+                integration_id:
+                  type: string
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+      '400':
+        $ref: '#/components/responses/BadRequest'
+      '500':
+        $ref: '#/components/responses/InternalServerError'
+  
+  get:
+    summary: Get User Integrations
+    description: |
+      Retrieve all integrations for a specific user
+    tags:
+      - Integrations
+    parameters:
+      - name: chat_id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: The user's Telegram chat ID
+        example: "123456789"
+    responses:
+      '200':
+        description: User integrations retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                integrations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "550e8400-e29b-41d4-a716-446655440000"
+                      provider:
+                        type: string
+                        example: "notion"
+                      is_active:
+                        type: boolean
+                        example: true
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+      '400':
+        $ref: '#/components/responses/BadRequest'
+      '500':
+        $ref: '#/components/responses/InternalServerError'
+
+integrations_by_id:
+  delete:
+    summary: Delete User Integration
+    description: |
+      Delete a specific integration for a user
+    tags:
+      - Integrations
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Integration ID
+        example: "550e8400-e29b-41d4-a716-446655440000"
+    responses:
+      '200':
+        description: Integration deleted successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Integration deleted successfully"
+      '404':
+        $ref: '#/components/responses/NotFound'
+      '500':
+        $ref: '#/components/responses/InternalServerError'

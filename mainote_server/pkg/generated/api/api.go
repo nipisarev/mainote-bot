@@ -15,6 +15,13 @@ import (
 	"net/http"
 )
 
+// AppsAPIRouter defines the required methods for binding the api requests to a responses for the AppsAPI
+// The AppsAPIRouter implementation should parse necessary information from the http request,
+// pass the data to a AppsAPIServicer to perform the required actions, then write the service results to the http response.
+type AppsAPIRouter interface {
+	GetApps(http.ResponseWriter, *http.Request)
+}
+
 // HealthAPIRouter defines the required methods for binding the api requests to a responses for the HealthAPI
 // The HealthAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a HealthAPIServicer to perform the required actions, then write the service results to the http response.
@@ -22,15 +29,23 @@ type HealthAPIRouter interface {
 	CheckHealth(http.ResponseWriter, *http.Request)
 }
 
-// NotesAPIRouter defines the required methods for binding the api requests to a responses for the NotesAPI
-// The NotesAPIRouter implementation should parse necessary information from the http request,
-// pass the data to a NotesAPIServicer to perform the required actions, then write the service results to the http response.
-type NotesAPIRouter interface {
-	CreateNote(http.ResponseWriter, *http.Request)
-	DeleteNote(http.ResponseWriter, *http.Request)
-	GetNoteById(http.ResponseWriter, *http.Request)
-	ListNotes(http.ResponseWriter, *http.Request)
-	UpdateNote(http.ResponseWriter, *http.Request)
+// UsersAPIRouter defines the required methods for binding the api requests to a responses for the UsersAPI
+// The UsersAPIRouter implementation should parse necessary information from the http request,
+// pass the data to a UsersAPIServicer to perform the required actions, then write the service results to the http response.
+type UsersAPIRouter interface {
+	AuthUser(http.ResponseWriter, *http.Request)
+	CreateUser(http.ResponseWriter, *http.Request)
+	CreateUserSettings(http.ResponseWriter, *http.Request)
+	GetUserByChatId(http.ResponseWriter, *http.Request)
+	UpdateUserSettings(http.ResponseWriter, *http.Request)
+}
+
+// AppsAPIServicer defines the api actions for the AppsAPI service
+// This interface intended to stay up to date with the openapi yaml used to generate it,
+// while the service implementation can be ignored with the .openapi-generator-ignore file
+// and updated with the logic required for the API.
+type AppsAPIServicer interface {
+	GetApps(context.Context) (ImplResponse, error)
 }
 
 // HealthAPIServicer defines the api actions for the HealthAPI service
@@ -41,14 +56,14 @@ type HealthAPIServicer interface {
 	CheckHealth(context.Context) (ImplResponse, error)
 }
 
-// NotesAPIServicer defines the api actions for the NotesAPI service
+// UsersAPIServicer defines the api actions for the UsersAPI service
 // This interface intended to stay up to date with the openapi yaml used to generate it,
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
-type NotesAPIServicer interface {
-	CreateNote(context.Context, CreateNoteRequest) (ImplResponse, error)
-	DeleteNote(context.Context, string) (ImplResponse, error)
-	GetNoteById(context.Context, string) (ImplResponse, error)
-	ListNotes(context.Context, string, NoteCategory, NoteStatus, int32, int32) (ImplResponse, error)
-	UpdateNote(context.Context, string, UpdateNoteRequest) (ImplResponse, error)
+type UsersAPIServicer interface {
+	AuthUser(context.Context, AuthUserRequest) (ImplResponse, error)
+	CreateUser(context.Context, CreateUserRequest) (ImplResponse, error)
+	CreateUserSettings(context.Context, UserSettingsRequest) (ImplResponse, error)
+	GetUserByChatId(context.Context, string) (ImplResponse, error)
+	UpdateUserSettings(context.Context, string, UserSettingsRequest) (ImplResponse, error)
 }

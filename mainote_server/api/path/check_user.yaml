@@ -1,0 +1,52 @@
+get:
+  tags:
+    - Users
+  summary: Check if user exists by chat_id
+  description: |
+    Checks if a user is already authenticated and associated with the given chat_id.
+    This endpoint is used when a user sends /start command to determine if they need to authenticate.
+    Returns user information if found, or 404 if no user is associated with this chat_id.
+  operationId: checkUserByChatId
+  parameters:
+    - name: chat_id
+      in: path
+      required: true
+      description: Telegram chat ID to check
+      schema:
+        type: string
+        example: "123456789"
+  responses:
+    "200":
+      description: User found for this chat_id
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/check_user_response.yaml"
+          examples:
+            user_found:
+              summary: User exists and is authenticated
+              value:
+                user_id: "550e8400-e29b-41d4-a716-446655440000"
+                email: "user@example.com"
+                chat_id: "123456789"
+                is_authenticated: true
+    "404":
+      description: No user found for this chat_id
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/bad_request.yaml"
+          examples:
+            user_not_found:
+              summary: User not found
+              value:
+                error: "User not found"
+                message: "No user is associated with this chat_id"
+    "400":
+      description: Invalid chat_id parameter
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/bad_request.yaml"
+    "500":
+      $ref: "../schema/responses/internal_server_error.yaml"

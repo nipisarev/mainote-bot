@@ -9,8 +9,8 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/stretchr/testify/require"
 
-	api "mainote-backend/pkg/generated/api"
-	srvErrs "mainote-backend/pkg/server/errors"
+	api "mainote-server/pkg/generated/api"
+	srvErrs "mainote-server/pkg/server/errors"
 )
 
 func TestErrorHandler(t *testing.T) {

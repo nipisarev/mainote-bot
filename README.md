@@ -112,7 +112,7 @@ mainote-cli start
 mainote-cli status        # Check service status
 mainote-cli logs          # View logs
 mainote-cli logs-bot      # View Python bot logs only
-mainote-cli logs-go       # View Go backend logs only
+mainote-cli logs-server       # View Go backend logs only
 mainote-cli stop          # Stop all services
 mainote-cli shell         # Access container shell
 ```
@@ -277,7 +277,7 @@ mainote-cli stop
 - `stop` - Stop all services (using `mainote-cli docker-stop`)
 - `logs` - Show logs of all services (using `mainote-cli logs`)
 - `logs-bot` - Show logs of Python bot only (using `mainote-cli logs-bot`)
-- `logs-go` - Show logs of Go backend only (using `mainote-cli logs-go`)
+- `logs-server` - Show logs of Go backend only (using `mainote-cli logs-server`)
 - `shell-bot` - Open shell in Python bot container (using `mainote-cli shell`)
 - `build` - Build all services (using `mainote-cli docker-build`)
 - `clean` - Stop and remove all containers (using `mainote-cli docker-clean`)

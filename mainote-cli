@@ -41,8 +41,8 @@ show_cli_help() {
     echo ""
     echo -e "${GREEN}Development Commands:${NC}"
     echo "  generate-api       Generate Go API code from OpenAPI specification"
-    echo "  dev-python         Start Python bot locally"
-    echo "  dev-go             Start Go backend locally"
+    echo "  dev-bot         Start Python bot locally"
+    echo "  dev-server             Start Go backend locally"
     echo ""
     echo -e "${GREEN}Database Commands:${NC}"
     echo "  db-migrate         Apply database migrations"
@@ -59,6 +59,8 @@ show_cli_help() {
     echo "  restart            Restart Docker development environment"
     echo "  reset              Reset environment (stop + clean + build + start)"
     echo "  logs               Show Docker logs"
+    echo "  logs-bot           Show Python bot logs only"
+    echo "  logs-server        Show Go server logs only"
     echo "  status             Show Docker services status"
     echo "  shell              Open shell in Python bot container"
     echo ""
@@ -98,7 +100,7 @@ case "${1:-help}" in
         ;;
     "restart")
         # Shortcut for restart
-        make restart
+        make docker-restart
         ;;
     "reset")
         # Reset environment: stop, clean, build, and start
@@ -134,6 +136,14 @@ case "${1:-help}" in
     "logs")
         # Shortcut for docker-logs
         make docker-logs
+        ;;
+    "logs-bot")
+        # Show Python bot logs only
+        "${PROJECT_DIR}/scripts/docker/dev-docker.sh" logs-bot
+        ;;
+    "logs-server")
+        # Show Go server logs only
+        "${PROJECT_DIR}/scripts/docker/dev-docker.sh" logs-server
         ;;
     "status")
         # Shortcut for docker-status

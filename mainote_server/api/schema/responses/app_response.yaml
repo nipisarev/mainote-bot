@@ -1,0 +1,18 @@
+type: object
+properties:
+  app_id:
+    type: string
+    format: uuid
+    description: Unique identifier for the app
+  name:
+    type: string
+    description: User-friendly name for the app
+    example: Notion
+  description:
+    type: string
+    nullable: true
+    description: Optional description of the app
+    example: Default Notion integration for syncing notes and tasks
+required:
+  - app_id
+  - name

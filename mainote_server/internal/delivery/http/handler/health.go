@@ -1,10 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
-	"net/http"
-
-	"mainote-backend/internal/domain"
+	"context"
+	"mainote-server/internal/domain"
+	"mainote-server/pkg/generated/api"
 )
 
 type HealthHandler struct {
@@ -19,14 +18,7 @@ func NewHealthHandler(healthUseCase domain.HealthUseCase) *HealthHandler {
 }
 
 // CheckHealth handles health check requests
-func (h *HealthHandler) CheckHealth(w http.ResponseWriter, r *http.Request) {
+func (h *HealthHandler) CheckHealth(ctx context.Context) (api.ImplResponse, error) {
 	healthStatus := h.healthUseCase.CheckHealth()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(healthStatus); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	return api.Response(200, healthStatus), nil
 }

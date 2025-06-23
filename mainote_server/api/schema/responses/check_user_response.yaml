@@ -1,0 +1,22 @@
+type: object
+properties:
+  user_id:
+    type: string
+    format: uuid
+    description: Unique identifier for the user
+  email:
+    type: string
+    format: email
+    description: User's email address
+  chat_id:
+    type: string
+    description: Telegram chat ID associated with the user
+  is_authenticated:
+    type: boolean
+    description: Whether the user is authenticated
+    example: true
+required:
+  - user_id
+  - email
+  - chat_id
+  - is_authenticated

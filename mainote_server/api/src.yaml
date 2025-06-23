@@ -34,34 +34,18 @@ paths:
   # Health check endpoint
   /health:
     $ref: 'path/health.yaml'
-  
-  # Notes CRUD endpoints
-  /api/v1/notes:
-    $ref: 'path/notes.yaml'
-  
-  /api/v1/notes/{noteId}:
-    $ref: 'path/note_by_id.yaml'
+  /api/v1/users:
+    $ref: 'path/users.yaml'
+  /api/v1/user/settings:
+    $ref: 'path/user_settings.yaml'
+  /api/v1/users/chat/{chat_id}:
+    $ref: 'path/user_by_chat_id.yaml'
+  /api/v1/auth:
+    $ref: 'path/auth.yaml'
+  /api/v1/apps:
+    $ref: 'path/apps.yaml'
 
 components:
-  schemas:
-    Note:
-      $ref: 'schema/components/note.yaml'
-    NoteCategory:
-      $ref: 'schema/components/note_category.yaml'
-    NoteStatus:
-      $ref: 'schema/components/note_status.yaml'
-    HealthResponse:
-      $ref: 'schema/components/health_response.yaml'
-    ErrorResponse:
-      $ref: 'schema/components/error_response.yaml'
-    PaginationInfo:
-      $ref: 'schema/components/pagination_info.yaml'
-    CreateNoteRequest:
-      $ref: 'schema/requests/create_note_request.yaml'
-    UpdateNoteRequest:
-      $ref: 'schema/requests/update_note_request.yaml'
-    NotesListResponse:
-      $ref: 'schema/responses/notes_list_response.yaml'
   
   responses:
     BadRequest:
@@ -76,8 +60,8 @@ components:
 tags:
   - name: Health
     description: Health check operations
-  - name: Notes
-    description: Note management operations
-    externalDocs:
-      description: Find out more about notes
-      url: https://docs.mainote.com/notes
+  - name: Users
+    description: User management operations
+  - name: Apps
+    description: App management operations for customer installations
+

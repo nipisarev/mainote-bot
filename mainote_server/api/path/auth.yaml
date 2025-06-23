@@ -1,0 +1,66 @@
+post:
+  tags:
+    - Users
+  summary: Authenticate/register user with chat_id
+  description: |
+    Simple authentication endpoint that either:
+    - Authenticates existing user and links them to chat_id
+    - Creates new user and links them to chat_id
+    Used when a user first starts conversation with the Telegram bot.
+  operationId: authUser
+  requestBody:
+    description: Simple user auth data with chat_id
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../schema/requests/auth_user_request.yaml"
+        examples:
+          auth_request:
+            summary: Authenticate user with chat_id
+            value:
+              chat_id: "123456789"
+              email: "user@example.com"
+              password: "securepassword123"
+  responses:
+    "200":
+      description: User authenticated and linked to chat_id successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/auth_user_response.yaml"
+          examples:
+            success:
+              summary: Successful authentication
+              value:
+                user_id: "550e8400-e29b-41d4-a716-446655440000"
+                email: "user@example.com"
+                chat_id: "123456789"
+                created_at: "2025-06-22T10:00:00Z"
+                updated_at: "2025-06-22T10:00:00Z"
+    "201":
+      description: New user created and linked to chat_id successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/auth_user_response.yaml"
+    "400":
+      description: Invalid input data
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/bad_request.yaml"
+    "401":
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/bad_request.yaml"
+    "409":
+      description: Chat ID already connected to another user
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/bad_request.yaml"
+    "500":
+      $ref: "../schema/responses/internal_server_error.yaml"

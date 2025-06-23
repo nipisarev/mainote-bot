@@ -1,0 +1,43 @@
+type: object
+properties:
+  user_settings_id:
+    type: integer
+    description: Unique identifier for the user settings record
+    example: 1
+  user_id:
+    type: string
+    format: uuid
+    description: UUID of the user
+    example: "550e8400-e29b-41d4-a716-446655440000"
+  chat_id:
+    type: string
+    description: Telegram chat ID associated with the user
+    example: "123456789"
+  morning_notification_time:
+    type: string
+    nullable: true
+    description: Morning notification time in HH:MM format (e.g., "08:00")
+    pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    example: "08:00"
+  timezone:
+    type: string
+    nullable: true
+    description: User's timezone (e.g., "UTC", "America/New_York", "Europe/London")
+    example: "UTC"
+  created_at:
+    type: string
+    format: date-time
+    description: When the user settings were created
+    example: "2023-12-01T10:00:00Z"
+  updated_at:
+    type: string
+    format: date-time
+    description: When the user settings were last updated
+    example: "2023-12-01T10:00:00Z"
+required:
+  - user_settings_id
+  - user_id
+  - chat_id
+  - created_at
+  - updated_at
+description: User settings response with all current settings

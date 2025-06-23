@@ -24,12 +24,9 @@ The project uses dual-service architecture deployed on fly.io with shared Postgr
 mainote-bot/
 ├── mainote_bot/            # Python Telegram bot service
 │   ├── bot/               # Telegram handlers (commands, callbacks, messages)
-│   ├── notion/            # Notion API integration
-│   ├── scheduler/         # Notification scheduling
 │   ├── webhook/           # FastAPI webhook handlers
 │   ├── utils/             # Shared utilities
 │   ├── config.py          # Environment configuration
-│   ├── database.py        # PostgreSQL database operations
 │   └── main.py           # FastAPI application entry point
 ├── mainote_server/        # Go backend service
 │   ├── cmd/server/        # Application entry points
@@ -74,6 +71,13 @@ mainote-bot/
 
 ### Primary CLI (Recommended)
 
+- IMPORTANT: ALWAYS USE mainote-cli
+- Never run commands directly - always use mainote-cli for any development task
+- This ensures consistent behavior and proper environment setup
+- mainote-cli installed and available from everywhere
+- Don't run mainote-cli as a ./mainote-cli, always use it as a command
+- Don't run make or scripts directly, always use mainote-cli
+
 ```bash
 # Start development environment
 mainote-cli start
@@ -84,7 +88,7 @@ mainote-cli stop
 # View logs (all services or specific)
 mainote-cli logs
 mainote-cli logs-bot
-mainote-cli logs-go
+mainote-cli logs-server
 
 # Rebuild containers after changes
 mainote-cli docker-build
@@ -151,8 +155,8 @@ mainote-cli prod-start    # Production deployment commands
 ```
 
 ### Service URLs (Development)
-- 🐍 **Python Bot**: http://localhost:8080
-- 🐹 **Go Backend**: http://localhost:8081
+- 🐍 **Mainote Bot**: http://localhost:8080
+- 🐹 **Mainote Server**: http://localhost:8081
 - 🗄️ **PostgreSQL**: localhost:5433 (external port)
 
 ### Development Features
@@ -396,7 +400,7 @@ curl -s http://localhost:8080/health | jq '.services | to_entries | map(select(.
 # Development logs (recommended)
 mainote-cli logs | grep ERROR
 mainote-cli logs-bot | grep ERROR
-mainote-cli logs-go | grep ERROR
+mainote-cli logs-server | grep ERROR
 
 # Legacy development logs
 ./dev-docker.sh logs python-bot | grep ERROR

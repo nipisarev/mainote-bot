@@ -1,300 +1,289 @@
-from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
-from mainote_bot.config import TELEGRAM_BOT_TOKEN, NOTIFICATION_CHAT_IDS
 from mainote_bot.utils.logging import logger
-from mainote_bot.notion.tasks import get_active_tasks, format_morning_notification
-import mainote_bot.user_preferences as user_preferences
-import pytz
-from mainote_bot.scheduler.notifications import force_notification_recalculation
-from timezonefinder import TimezoneFinder
-from datetime import datetime
+from mainote_bot.api.client import MainoteAPIClient
+import re
+import secrets
+import string
+
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /start command."""
+    """Handle the /start command with user setup flow."""
     try:
-        chat_id = update.effective_chat.id
+        chat_id = str(update.effective_chat.id)
+        user_name = update.effective_user.first_name or "there"
         
-        # First try to get timezone from user's location if available
-        if update.effective_message and update.effective_message.location:
-            await handle_location(update, context)
-            return
+        # Initialize API client
+        api_client = MainoteAPIClient()
+        
+        # Check if user already exists
+        try:
+            existing_user = await api_client.get_user_by_chat_id(chat_id)
             
-        # If no location, ask user to share it
-        keyboard = [[KeyboardButton("📍 Поделиться местоположением", request_location=True)]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-        
-        # Send location request message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="👋 Привет! Я бот для сохранения заметок в Notion.\n\n"
-                 "Для корректной работы уведомлений, пожалуйста, поделитесь вашим местоположением.\n"
-                 "Это поможет установить правильный часовой пояс.",
-            reply_markup=reply_markup
-        )
-        
-        # Send main welcome message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="Просто отправь мне текст, и я сохраню его как заметку.\n"
-                 "После сохранения ты сможешь выбрать тип заметки:\n"
-                 "💡 Идея\n"
-                 "✅ Задача\n"
-                 "🏖 Личное"
-        )
-        
-        logger.info(f"Sent welcome messages to {chat_id}")
-    except Exception as e:
-        logger.error(f"Error in start command: {str(e)}", exc_info=True)
-
-async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle location message to set user's timezone."""
-    try:
-        chat_id = update.effective_chat.id
-        location = update.effective_message.location
-        
-        if location:
-            # Use timezonefinder to get timezone from coordinates
-            tf = TimezoneFinder()
-            timezone_str = tf.timezone_at(lat=location.latitude, lng=location.longitude)
-            
-            if timezone_str:
-                # Save user's timezone
-                if await user_preferences.set_user_timezone(chat_id, timezone_str):
-                    logger.info(f"Set timezone to {timezone_str} for chat ID {chat_id}")
-                    force_notification_recalculation()
-                    
-                    # Get timezone offset for display
-                    tz = pytz.timezone(timezone_str)
-                    offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
-                    offset_str = f"UTC{'+' if offset >= 0 else ''}{int(offset)}"
-                    
-                    # Send timezone confirmation
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=f"🌐 Часовой пояс установлен на {timezone_str} ({offset_str}).\n\n"
-                             f"Теперь уведомления будут приходить в соответствии с вашим часовым поясом."
-                    )
-                    
-                    # Send main welcome message
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text="Просто отправь мне текст, и я сохраню его как заметку.\n"
-                             "После сохранения ты сможешь выбрать тип заметки:\n"
-                             "💡 Идея\n"
-                             "✅ Задача\n"
-                             "🏖 Личное"
-                    )
-                else:
-                    logger.error(f"Failed to save timezone {timezone_str} for chat ID {chat_id}")
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text="Произошла ошибка при сохранении часового пояса. Попробуйте позже."
-                    )
-            else:
-                logger.error(f"Could not determine timezone for coordinates: {location.latitude}, {location.longitude}")
+            if existing_user:
+                # User already exists and is connected
+                welcome_message = (
+                    f"👋 Welcome back {user_name}!\n\n"
+                    f"You're logged in as: {existing_user.get('email', 'Unknown')}\n\n"
+                    "I'm ready to help you save your notes! Simply send me any text message and I'll save it for you.\n\n"
+                    "Commands:\n"
+                    "/start - Show this welcome message\n"
+                    "/help - Get help and information"
+                )
+                
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    text="Не удалось определить часовой пояс по вашему местоположению. Попробуйте использовать команду /settimezone"
+                    text=welcome_message
                 )
-    except Exception as e:
-        logger.error(f"Error handling location: {str(e)}", exc_info=True)
+                
+                logger.info(f"Returning user {existing_user.get('email')} welcomed back to chat {chat_id}")
+                return
+                
+        except Exception as e:
+            # Log the error but continue with setup flow
+            logger.error(f"Error checking existing user for chat {chat_id}: {str(e)}")
+            
+            # Send error message to user and stop
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, I'm having trouble connecting to the server right now. Please try again in a few minutes."
+            )
+            return
+        
+        # New user - start setup flow
+        welcome_message = (
+            f"👋 Hello {user_name}! Welcome to Mainote Bot!\n\n"
+            "I'm here to help you save and organize your notes.\n\n"
+            "To get started, I just need your email address.\n"
+            "Please send me your email address."
+        )
+        
+        # Set conversation state
+        context.user_data['setup_state'] = 'waiting_for_email'
+        context.user_data['chat_id'] = chat_id
+        
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Произошла ошибка при обработке местоположения. Попробуйте позже."
+            text=welcome_message
         )
+        
+        logger.info(f"Started setup flow for new user in chat {chat_id}")
+        
+    except Exception as e:
+        logger.error(f"Error in start command: {str(e)}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Sorry, something went wrong. Please try again later."
+        )
+
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /help command."""
     try:
         chat_id = update.effective_chat.id
+        
+        help_message = (
+            "ℹ️ **Mainote Bot Help**\n\n"
+            "I'm a simple note-taking bot. Here's how to use me:\n\n"
+            "📝 **Taking Notes:**\n"
+            "• Send me any text message\n"
+            "• I'll automatically save it as a note\n\n"
+            "🎯 **Commands:**\n"
+            "• /start - Show welcome message and set up account\n"
+            "• /help - Show this help message\n"
+            "• /reset - Reset setup process if you get stuck\n\n"
+            "That's it! Keep it simple and start taking notes! 📚"
+        )
+        
         await context.bot.send_message(
             chat_id=chat_id,
-            text="📝 Как пользоваться ботом:\n\n"
-                 "1. Отправь любой текст - он будет сохранен как заметка\n"
-                 "2. После сохранения выбери тип заметки\n"
-                 "3. Готово! Заметка появится в твоем Notion\n\n"
-                 "Команды:\n"
-                 "/start - начать работу с ботом\n"
-                 "/help - показать это сообщение\n"
-                 "/morning - получить утренний план на день\n"
-                 "/settime - настроить время утренних уведомлений (можно указать время напрямую: /settime 14:30)\n"
-                 
+            text=help_message,
+            parse_mode="Markdown"
         )
-        logger.info(f"Sent help message to {chat_id}")
+        
+        logger.info(f"Sent help message to user {chat_id}")
+        
     except Exception as e:
         logger.error(f"Error in help command: {str(e)}", exc_info=True)
-
-async def morning_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /morning command to manually trigger morning notification."""
-    try:
-        chat_id = update.effective_chat.id
-
-        # Add this chat_id to notification recipients if not already there
-        chat_id_str = str(chat_id)
-        if chat_id_str not in NOTIFICATION_CHAT_IDS and NOTIFICATION_CHAT_IDS != ['']:
-            logger.info(f"Adding chat ID {chat_id} to notification recipients")
-            # Note: This won't persist after restart, would need to save to a file or database
-
-        # Get active tasks
-        tasks = await get_active_tasks()
-
-        # Format notification message
-        message = await format_morning_notification(tasks)
-
-        # Send the notification
-        await context.bot.send_message(chat_id=chat_id, text=message)
-        logger.info(f"Sent manual morning notification to {chat_id}")
-    except Exception as e:
-        logger.error(f"Error in morning command: {str(e)}", exc_info=True)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Произошла ошибка при получении утреннего плана. Попробуйте позже."
+            text="Sorry, something went wrong. Please try again later."
         )
 
-async def settimezone_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /settimezone command to configure user timezone."""
+
+def is_valid_email(email: str) -> bool:
+    """Validate email format."""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+
+def generate_secure_password(length: int = 12) -> str:
+    """Generate a secure random password."""
+    # Use a mix of letters, digits, and some safe special characters
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    return password
+
+
+async def handle_setup_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """
+    Handle the user setup conversation flow.
+    Returns True if message was handled as part of setup, False otherwise.
+    """
+    if 'setup_state' not in context.user_data:
+        return False
+        
+    chat_id = str(update.effective_chat.id)
+    message_text = update.message.text.strip()
+    setup_state = context.user_data.get('setup_state')
+    
+    api_client = MainoteAPIClient()
+    
     try:
-        chat_id = update.effective_chat.id
-
-        # Get current timezone for this user
-        current_timezone = user_preferences.get_user_timezone(chat_id)
-        current_timezone_msg = f"Текущий часовой пояс: {current_timezone}" if current_timezone else "Часовой пояс не настроен"
-
-        # Common timezones for Russia and nearby regions
-        common_timezones = [
-            ("Europe/Moscow", "Москва (UTC+3)"),
-            ("Europe/Kaliningrad", "Калининград (UTC+2)"),
-            ("Europe/Samara", "Самара (UTC+4)"),
-            ("Asia/Yekaterinburg", "Екатеринбург (UTC+5)"),
-            ("Asia/Omsk", "Омск (UTC+6)"),
-            ("Asia/Krasnoyarsk", "Красноярск (UTC+7)"),
-            ("Asia/Irkutsk", "Иркутск (UTC+8)"),
-            ("Asia/Yakutsk", "Якутск (UTC+9)"),
-            ("Asia/Vladivostok", "Владивосток (UTC+10)"),
-            ("Asia/Magadan", "Магадан (UTC+11)"),
-            ("Asia/Kamchatka", "Камчатка (UTC+12)")
-        ]
-
-        # Create buttons for timezone selection
-        keyboard = []
-        for tz_name, tz_display in common_timezones:
-            keyboard.append([InlineKeyboardButton(tz_display, callback_data=f"timezone:{tz_name}")])
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Create a new bot instance for this event loop
-        local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-        await local_bot.send_message(
-            chat_id=chat_id,
-            text=f"🌐 Выберите ваш часовой пояс для корректной работы уведомлений:\n\n{current_timezone_msg}",
-            reply_markup=reply_markup
-        )
-        logger.info(f"Sent timezone selection buttons to {chat_id}")
-    except Exception as e:
-        logger.error(f"Error in settimezone command: {str(e)}", exc_info=True)
-        # Create a new bot instance for this event loop
-        local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-        await local_bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Произошла ошибка при настройке часового пояса. Попробуйте позже."
-        )
-
-async def settime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /settime command to configure notification time."""
-    try:
-        chat_id = update.effective_chat.id
-
-        # Check if user has timezone set
-        user_timezone = await user_preferences.get_user_timezone(chat_id)
-        if not user_timezone:
-            # Create a new bot instance for this event loop
-            local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-            await local_bot.send_message(
+        if setup_state == 'waiting_for_email':
+            # Validate email format
+            if not is_valid_email(message_text):
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="❌ That doesn't look like a valid email address.\nPlease send me a valid email address (e.g., user@example.com):"
+                )
+                return True
+            
+            email = message_text
+            
+            # Show processing message
+            processing_msg = await context.bot.send_message(
                 chat_id=chat_id,
-                text="⚠️ Для корректной работы уведомлений необходимо установить часовой пояс.\n\n"
-                     "Пожалуйста, используйте команду /settimezone для выбора вашего часового пояса."
+                text="� Setting up your account..."
             )
-            return
-
-        # Check if a time argument was provided
-        if context.args and len(context.args) > 0:
-            time_arg = context.args[0]
-
-            # Validate time format (HH:MM)
+            
             try:
-                hour, minute = map(int, time_arg.split(':'))
-                if 0 <= hour < 24 and 0 <= minute < 60:
-                    # Save user preference
-                    if await user_preferences.set_user_notification_time(chat_id, time_arg):
-                        logger.info(f"Set notification time to {time_arg} for chat ID {chat_id}")
-
-                        # Create a new bot instance for this event loop
-                        local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-                        # Get timezone offset for display
-                        tz = pytz.timezone(user_timezone)
-                        offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
-                        offset_str = f"UTC{'+' if offset >= 0 else ''}{int(offset)}"
-
-                        # Send confirmation
-                        await local_bot.send_message(
-                            chat_id=chat_id,
-                            text=f"⏰ Время утренних уведомлений установлено на {time_arg} ({user_timezone}, {offset_str}).\n\n"
-                                 f"Вы будете получать уведомления ежедневно в {time_arg} по вашему местному времени."
-                        )
-                        return
-                    else:
-                        logger.error(f"Failed to save notification time for chat ID {chat_id}")
-                else:
-                    logger.error(f"Invalid time format: {time_arg}")
+                # Generate a secure password automatically
+                auto_password = generate_secure_password()
+                
+                # Since we've already checked that no user exists for this chat_id,
+                # we know this is a new user. Create user with auto-generated password.
+                user_data = await api_client.create_user(email, auto_password)
+                logger.info(f"Created new user {email} with auto-generated password")
+                
+                # Now link the user to chat_id via auth (this just sets the chat_id)
+                auth_result = await api_client.authenticate_user(chat_id, email, auto_password)
+                
+                logger.info(f"Auth result: {auth_result}")  # Debug log
+                
+                if not auth_result or 'user_id' not in auth_result:
+                    logger.error(f"Authentication failed: auth_result={auth_result}")
+                    raise Exception("Authentication failed: unable to get user_id")
+                
+                user_id = auth_result['user_id']
+                logger.info(f"Authenticated user {email} with user_id {user_id}")
+                
+                # Create user settings to associate user with chat_id
+                try:
+                    await api_client.create_user_settings(user_id, chat_id)
+                    logger.info(f"Created user settings for user_id {user_id}, chat_id {chat_id}")
+                except Exception as settings_error:
+                    # Log error but don't fail the whole setup - user is already created
+                    logger.error(f"Failed to create user settings for user_id {user_id}, chat_id {chat_id}: {str(settings_error)}")
+                
+                # Clear setup state
+                context.user_data.clear()
+                
+                # Delete processing message
+                await context.bot.delete_message(chat_id=chat_id, message_id=processing_msg.message_id)
+                
+                # Send success message
+                success_message = (
+                    "✅ Great! You're all set up!\n\n"
+                    f"📧 Email: {email}\n"
+                    f"💬 Chat ID: {chat_id}\n\n"
+                    "Your account has been created automatically!\n\n"
+                    "You can now start sending me notes! Just type any message and I'll save it for you.\n\n"
+                    "Commands:\n"
+                    "/start - Show welcome message\n"
+                    "/help - Get help and information"
+                )
+                
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=success_message
+                )
+                
+                logger.info(f"Successfully set up user {email} for chat {chat_id} with auto-generated password")
+                return True
+                
             except Exception as e:
-                logger.error(f"Error parsing time argument: {str(e)}", exc_info=True)
-                # Continue to show time selection buttons
-
-        # Get current notification time for this user
-        current_time = await user_preferences.get_user_notification_time(chat_id)
-        current_time_msg = f"Текущее время уведомлений: {current_time}" if current_time else "Время уведомлений не настроено"
-
-        # Create buttons for common times (more options)
-        keyboard = [
-            [
-                InlineKeyboardButton("06:00", callback_data="time:06:00"),
-                InlineKeyboardButton("07:00", callback_data="time:07:00"),
-                InlineKeyboardButton("08:00", callback_data="time:08:00")
-            ],
-            [
-                InlineKeyboardButton("09:00", callback_data="time:09:00"),
-                InlineKeyboardButton("10:00", callback_data="time:10:00"),
-                InlineKeyboardButton("11:00", callback_data="time:11:00")
-            ],
-            [
-                InlineKeyboardButton("12:00", callback_data="time:12:00"),
-                InlineKeyboardButton("14:00", callback_data="time:14:00"),
-                InlineKeyboardButton("16:00", callback_data="time:16:00")
-            ],
-            [
-                InlineKeyboardButton("18:00", callback_data="time:18:00"),
-                InlineKeyboardButton("20:00", callback_data="time:20:00"),
-                InlineKeyboardButton("22:00", callback_data="time:22:00")
-            ],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Create a new bot instance for this event loop
-        local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-        await local_bot.send_message(
-            chat_id=chat_id,
-            text=f"⏰ Выберите время для утренних уведомлений или используйте команду '/settime ЧЧ:ММ' для установки произвольного времени:\n\n{current_time_msg}",
-            reply_markup=reply_markup
-        )
-        logger.info(f"Sent time selection buttons to {chat_id}")
+                # Delete processing message
+                try:
+                    await context.bot.delete_message(chat_id=chat_id, message_id=processing_msg.message_id)
+                except:
+                    pass  # Ignore if we can't delete
+                
+                error_message = str(e)
+                
+                if "already connected" in error_message:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text="❌ This chat is already connected to another user account.\n\nIf you believe this is an error, please contact support."
+                    )
+                    # Clear setup state
+                    context.user_data.clear()
+                    
+                elif "Server timeout" in error_message or "Unable to connect" in error_message:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text="❌ Server connection problem. Please try again in a few minutes.\n\nSend /start to try again."
+                    )
+                    # Clear setup state
+                    context.user_data.clear()
+                    
+                else:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=f"❌ Setup failed: {error_message}\n\nSend /start to try again."
+                    )
+                    # Clear setup state
+                    context.user_data.clear()
+                
+                logger.error(f"Setup failed for chat {chat_id}: {error_message}")
+                return True
+                
     except Exception as e:
-        logger.error(f"Error in settime command: {str(e)}", exc_info=True)
-        # Create a new bot instance for this event loop
-        local_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-        await local_bot.send_message(
+        logger.error(f"Unexpected error in setup flow for chat {chat_id}: {str(e)}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ An unexpected error occurred. Please send /start to try again."
+        )
+        # Clear setup state
+        context.user_data.clear()
+        return True
+    
+    return False
+
+
+async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /reset command to clear setup state."""
+    try:
+        chat_id = str(update.effective_chat.id)
+        
+        # Clear any setup state
+        context.user_data.clear()
+        
+        reset_message = (
+            "🔄 Your setup has been reset.\n\n"
+            "Send /start to begin the setup process again."
+        )
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=reset_message
+        )
+        
+        logger.info(f"Reset setup state for user in chat {chat_id}")
+        
+    except Exception as e:
+        logger.error(f"Error in reset command: {str(e)}", exc_info=True)
+        await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Произошла ошибка при настройке времени уведомлений. Попробуйте позже."
+            text="Sorry, something went wrong. Please try again later."
         )

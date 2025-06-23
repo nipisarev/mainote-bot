@@ -6,10 +6,12 @@ import (
 )
 
 type Config struct {
-	Port        string
-	SentryDSN   string
-	Environment string
-	DatabaseURL string
+	Port            string
+	SentryDSN       string
+	Environment     string
+	DatabaseURL     string
+	NotionAPIKey    string
+	NotionDatabaseID string
 }
 
 func Load() *Config {
@@ -24,10 +26,12 @@ func Load() *Config {
 		dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	return &Config{
-		Port:        getEnv("APP_PORT", "8081"),
-		SentryDSN:   getEnv("SENTRY_DSN", ""),
-		Environment: getEnv("ENVIRONMENT", "development"),
-		DatabaseURL: databaseURL,
+		Port:            getEnv("APP_PORT", "8081"),
+		SentryDSN:       getEnv("SENTRY_DSN", ""),
+		Environment:     getEnv("ENVIRONMENT", "development"),
+		DatabaseURL:     databaseURL,
+		NotionAPIKey:    getEnv("NOTION_API_KEY", ""),
+		NotionDatabaseID: getEnv("NOTION_DATABASE_ID", ""),
 	}
 }
 
