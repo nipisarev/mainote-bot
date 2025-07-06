@@ -275,3 +275,142 @@ class MainoteAPIClient:
                 raise  # Re-raise our custom exceptions
             logger.error(f"Unexpected error creating user settings for chat_id {chat_id}: {str(e)}")
             raise Exception("An unexpected error occurred - please try again later")
+    
+    # Note-related methods
+    async def create_note(self, chat_id: str, content: str, title: str = None, category: str = "idea", 
+                         status: str = "active", source: str = "telegram", 
+                         voice_file_id: str = None, transcription: str = None, 
+                         metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Create a new note.
+        
+        Args:
+            chat_id: Telegram chat ID as string
+            content: Note content (required)
+            title: Note title (optional)
+            category: Note category (default: "idea")
+            status: Note status (default: "active")
+            source: Note source (default: "telegram")
+            voice_file_id: Telegram voice file ID (optional)
+            transcription: Voice transcription (optional)
+            metadata: Additional metadata (optional)
+            
+        Returns:
+            Created note data
+            
+        Raises:
+            Exception: If note creation fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/notes"
+            payload = {
+                "chat_id": chat_id,
+                "content": content,
+                "category": category,
+                "status": status,
+                "source": source
+            }
+            
+            # Add optional fields if provided
+            if title:
+                payload["title"] = title
+            if voice_file_id:
+                payload["voice_file_id"] = voice_file_id
+            if transcription:
+                payload["transcription"] = transcription
+            if metadata:
+                payload["metadata"] = metadata
+            
+            logger.info(f"Creating note for chat_id {chat_id} with category {category}")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 201:
+                    note_data = response.json()
+                    logger.info(f"Successfully created note {note_data.get('note_id')} for chat_id {chat_id}")
+                    return note_data
+                else:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
+                    logger.error(f"API error creating note for chat_id {chat_id}: {response.status_code} - {error_data}")
+                    
+                    if response.status_code == 400:
+                        raise Exception(f"Invalid input: {error_data.get('message', 'Please check your data')}")
+                    elif response.status_code == 404:
+                        raise Exception("User not found - please complete setup first")
+                    else:
+                        raise Exception(f"Note creation failed: {error_data.get('message', 'Unknown error')}")
+                        
+        except httpx.TimeoutException:
+            logger.error(f"Timeout creating note for chat_id {chat_id}")
+            raise Exception("Server timeout - please try again later")
+        except httpx.RequestError as e:
+            logger.error(f"Request error creating note for chat_id {chat_id}: {str(e)}")
+            raise Exception("Unable to connect to server - please try again later")
+        except Exception as e:
+            if any(msg in str(e) for msg in ["Invalid input", "User not found", "Note creation failed", "Server timeout", "Unable to connect"]):
+                raise  # Re-raise our custom exceptions
+            logger.error(f"Unexpected error creating note for chat_id {chat_id}: {str(e)}")
+            raise Exception("An unexpected error occurred - please try again later")
+
+    async def get_notes(self, chat_id: str, category: str = None, status: str = "active", 
+                       limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """
+        Get notes for a user.
+        
+        Args:
+            chat_id: Telegram chat ID as string
+            category: Filter by category (optional)
+            status: Filter by status (default: "active")
+            limit: Maximum number of notes to return (default: 50)
+            offset: Number of notes to skip (default: 0)
+            
+        Returns:
+            Notes list data with pagination info
+            
+        Raises:
+            Exception: If getting notes fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/notes"
+            params = {
+                "chat_id": chat_id,
+                "status": status,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            if category:
+                params["category"] = category
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params)
+                
+                if response.status_code == 200:
+                    notes_data = response.json()
+                    logger.info(f"Retrieved {len(notes_data.get('notes', []))} notes for chat_id {chat_id}")
+                    return notes_data
+                else:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
+                    logger.error(f"API error getting notes for chat_id {chat_id}: {response.status_code} - {error_data}")
+                    
+                    if response.status_code == 404:
+                        raise Exception("User not found - please complete setup first")
+                    else:
+                        raise Exception(f"Failed to get notes: {error_data.get('message', 'Unknown error')}")
+                        
+        except httpx.TimeoutException:
+            logger.error(f"Timeout getting notes for chat_id {chat_id}")
+            raise Exception("Server timeout - please try again later")
+        except httpx.RequestError as e:
+            logger.error(f"Request error getting notes for chat_id {chat_id}: {str(e)}")
+            raise Exception("Unable to connect to server - please try again later")
+        except Exception as e:
+            if any(msg in str(e) for msg in ["User not found", "Failed to get notes", "Server timeout", "Unable to connect"]):
+                raise  # Re-raise our custom exceptions
+            logger.error(f"Unexpected error getting notes for chat_id {chat_id}: {str(e)}")
+            raise Exception("An unexpected error occurred - please try again later")

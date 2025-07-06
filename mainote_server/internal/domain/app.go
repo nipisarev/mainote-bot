@@ -18,10 +18,3 @@ type App struct {
 	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 	DeletedAt   *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
-
-// AppRepository defines the interface for app data operations.
-type AppRepository interface {
-	GetAll() ([]App, error)
-	GetByID(id uuid.UUID) (*App, error)
-	GetByProvider(provider string) (*App, error)
-}

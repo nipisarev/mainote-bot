@@ -54,27 +54,32 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	appRepo := repository.NewAppRepository(db)
+	noteRepo := repository.NewNoteRepository(db)
 
 	// Initialize use cases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	appUsecase := usecase.NewAppUsecase(appRepo)
+	noteUsecase := usecase.NewNoteUsecase(noteRepo, userRepo)
 	healthUsecase := usecase.NewHealthUseCase()
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	appHandler := handler.NewAppHandler(appUsecase)
+	noteHandler := handler.NewNoteHandler(noteUsecase)
 	healthHandler := handler.NewHealthHandler(healthUsecase)
 
 	// Setup routes
 	healthAPIService := healthHandler
 	usersAPIService := userHandler
 	appsAPIService := appHandler
+	notesAPIService := noteHandler
 
 	healthAPIRouter := api.NewHealthAPIController(healthAPIService)
 	usersAPIRouter := api.NewUsersAPIController(usersAPIService)
 	appsAPIRouter := api.NewAppsAPIController(appsAPIService)
+	notesAPIRouter := api.NewNotesAPIController(notesAPIService)
 
-	router := api.NewRouter(healthAPIRouter, usersAPIRouter, appsAPIRouter)
+	router := api.NewRouter(healthAPIRouter, usersAPIRouter, appsAPIRouter, notesAPIRouter)
 
 	// Apply middleware
 	router.Use(middleware.LoggingMiddleware)

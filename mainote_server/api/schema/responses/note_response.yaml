@@ -1,0 +1,71 @@
+type: object
+properties:
+  note_id:
+    type: string
+    format: uuid
+    description: Unique note identifier
+    example: "550e8400-e29b-41d4-a716-446655440000"
+  chat_id:
+    type: string
+    description: Telegram chat ID
+    example: "123456789"
+  user_id:
+    type: string
+    format: uuid
+    description: User identifier
+    example: "123e4567-e89b-12d3-a456-426614174000"
+  title:
+    type: string
+    description: Note title
+    nullable: true
+    example: "Meeting Notes"
+  content:
+    type: string
+    description: Note content
+    example: "Important discussion about project requirements"
+  category:
+    type: string
+    description: Note category
+    example: "work"
+  status:
+    type: string
+    description: Note status
+    example: "active"
+  source:
+    type: string
+    description: Source of the note
+    example: "telegram"
+  voice_file_id:
+    type: string
+    description: Telegram voice file ID
+    nullable: true
+    example: "BAADBAADYwADBREAAZdmJhqJj6..."
+  transcription:
+    type: string
+    description: Voice transcription text
+    nullable: true
+    example: "This is transcribed voice message content"
+  metadata:
+    type: object
+    description: Additional metadata as JSON
+    nullable: true
+    additionalProperties: true
+    example:
+      tags: ["urgent", "meeting"]
+      location: "office"
+  created_at:
+    type: string
+    format: date-time
+    description: Creation timestamp
+    example: "2025-07-06T10:30:00Z"
+  updated_at:
+    type: string
+    format: date-time
+    description: Last update timestamp
+    example: "2025-07-06T10:30:00Z"
+  deleted_at:
+    type: string
+    format: date-time
+    description: Deletion timestamp (for soft deletes)
+    nullable: true
+    example: null

@@ -34,6 +34,8 @@ tags:
   name: Users
 - description: App management operations for customer installations
   name: Apps
+- description: Note management operations
+  name: Notes
 paths:
   /health:
     get:
@@ -346,6 +348,252 @@ paths:
       summary: Get all available apps for installation
       tags:
       - Apps
+  /api/v1/notes:
+    get:
+      description: Retrieves a list of notes for the user associated with the chat_id.
+      operationId: getNotes
+      parameters:
+      - description: Telegram chat ID to filter notes
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      - description: Filter notes by category
+        in: query
+        name: category
+        required: false
+        schema:
+          type: string
+      - description: Filter notes by status
+        in: query
+        name: status
+        required: false
+        schema:
+          default: active
+          type: string
+      - description: Maximum number of notes to return
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          maximum: 100
+          minimum: 1
+          type: integer
+      - description: Number of notes to skip
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/notes_list_response'
+          description: Notes retrieved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: User not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Get notes for user by chat_id
+      tags:
+      - Notes
+    post:
+      description: Creates a new note for the user.
+      operationId: createNote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_note_request'
+        description: Note object that needs to be created
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/note_response'
+          description: Note created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: User not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Create a new note
+      tags:
+      - Notes
+  /api/v1/note/{note_id}:
+    delete:
+      description: Soft deletes a note for the authenticated user.
+      operationId: deleteNote
+      parameters:
+      - description: Note ID
+        in: path
+        name: note_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Note deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Note not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Delete a note
+      tags:
+      - Notes
+    get:
+      description: Retrieves a specific note by ID for the authenticated user.
+      operationId: getNoteById
+      parameters:
+      - description: Note ID
+        in: path
+        name: note_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/note_response'
+          description: Note retrieved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Note not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Get a single note by ID
+      tags:
+      - Notes
+    put:
+      description: Updates an existing note for the authenticated user.
+      operationId: updateNote
+      parameters:
+      - description: Note ID
+        in: path
+        name: note_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_note_request'
+        description: Note update data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/note_response'
+          description: Note updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Note not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Update a note
+      tags:
+      - Notes
 components:
   responses:
     BadRequest:
@@ -593,6 +841,198 @@ components:
       required:
       - apps
       - count
+      type: object
+    notes_list_response:
+      properties:
+        notes:
+          description: List of notes
+          items:
+            $ref: '#/components/schemas/note_response'
+          type: array
+        total:
+          description: Total number of notes (before pagination)
+          example: 150
+          type: integer
+        limit:
+          description: Number of notes per page
+          example: 50
+          type: integer
+        offset:
+          description: Number of notes skipped
+          example: 0
+          type: integer
+        has_more:
+          description: Whether there are more notes available
+          example: true
+          type: boolean
+      type: object
+    create_note_request:
+      properties:
+        chat_id:
+          description: Telegram chat ID
+          example: "123456789"
+          type: string
+        title:
+          description: Note title (optional)
+          example: Meeting Notes
+          type: string
+        content:
+          description: Note content
+          example: Important discussion about project requirements
+          type: string
+        category:
+          default: idea
+          description: Note category
+          example: work
+          type: string
+        status:
+          default: active
+          description: Note status
+          enum:
+          - active
+          - archived
+          - deleted
+          type: string
+        source:
+          default: telegram
+          description: Source of the note
+          example: telegram
+          type: string
+        voice_file_id:
+          description: Telegram voice file ID (if note from voice message)
+          example: BAADBAADYwADBREAAZdmJhqJj6...
+          type: string
+        transcription:
+          description: Voice transcription text
+          example: This is transcribed voice message content
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata as JSON
+          example:
+            tags:
+            - urgent
+            - meeting
+            location: office
+          type: object
+      required:
+      - chat_id
+      - content
+      type: object
+    note_response:
+      properties:
+        note_id:
+          description: Unique note identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          type: string
+        chat_id:
+          description: Telegram chat ID
+          example: "123456789"
+          type: string
+        user_id:
+          description: User identifier
+          example: 123e4567-e89b-12d3-a456-426614174000
+          format: uuid
+          type: string
+        title:
+          description: Note title
+          example: Meeting Notes
+          nullable: true
+          type: string
+        content:
+          description: Note content
+          example: Important discussion about project requirements
+          type: string
+        category:
+          description: Note category
+          example: work
+          type: string
+        status:
+          description: Note status
+          example: active
+          type: string
+        source:
+          description: Source of the note
+          example: telegram
+          type: string
+        voice_file_id:
+          description: Telegram voice file ID
+          example: BAADBAADYwADBREAAZdmJhqJj6...
+          nullable: true
+          type: string
+        transcription:
+          description: Voice transcription text
+          example: This is transcribed voice message content
+          nullable: true
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata as JSON
+          example:
+            tags:
+            - urgent
+            - meeting
+            location: office
+          nullable: true
+          type: object
+        created_at:
+          description: Creation timestamp
+          example: 2025-07-06T10:30:00Z
+          format: date-time
+          type: string
+        updated_at:
+          description: Last update timestamp
+          example: 2025-07-06T10:30:00Z
+          format: date-time
+          type: string
+        deleted_at:
+          description: Deletion timestamp (for soft deletes)
+          format: date-time
+          nullable: true
+          type: string
+          example: null
+      type: object
+    update_note_request:
+      properties:
+        title:
+          description: Note title (optional)
+          example: Updated Meeting Notes
+          type: string
+        content:
+          description: Note content
+          example: Updated discussion about project requirements
+          type: string
+        category:
+          description: Note category
+          example: work
+          type: string
+        status:
+          description: Note status
+          enum:
+          - active
+          - archived
+          - deleted
+          example: active
+          type: string
+        voice_file_id:
+          description: Telegram voice file ID (if note from voice message)
+          example: BAADBAADYwADBREAAZdmJhqJj6...
+          type: string
+        transcription:
+          description: Voice transcription text
+          example: This is updated transcribed voice message content
+          type: string
+        metadata:
+          additionalProperties: true
+          description: Additional metadata as JSON
+          example:
+            tags:
+            - urgent
+            - meeting
+            - updated
+            location: office
+          type: object
       type: object
     app_response:
       properties:

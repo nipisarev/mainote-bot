@@ -1,0 +1,23 @@
+type: object
+properties:
+  notes:
+    type: array
+    items:
+      $ref: "../responses/note_response.yaml"
+    description: List of notes
+  total:
+    type: integer
+    description: Total number of notes (before pagination)
+    example: 150
+  limit:
+    type: integer
+    description: Number of notes per page
+    example: 50
+  offset:
+    type: integer
+    description: Number of notes skipped
+    example: 0
+  has_more:
+    type: boolean
+    description: Whether there are more notes available
+    example: true

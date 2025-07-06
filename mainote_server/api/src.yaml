@@ -44,6 +44,10 @@ paths:
     $ref: 'path/auth.yaml'
   /api/v1/apps:
     $ref: 'path/apps.yaml'
+  /api/v1/notes:
+    $ref: 'path/notes.yaml'
+  /api/v1/note/{note_id}:
+    $ref: 'path/note.yaml'
 
 components:
   
@@ -64,4 +68,6 @@ tags:
     description: User management operations
   - name: Apps
     description: App management operations for customer installations
+  - name: Notes
+    description: Note management operations
 

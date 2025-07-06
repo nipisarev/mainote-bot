@@ -1,0 +1,47 @@
+type: object
+properties:
+  chat_id:
+    type: string
+    description: Telegram chat ID
+    example: "123456789"
+  title:
+    type: string
+    description: Note title (optional)
+    example: "Meeting Notes"
+  content:
+    type: string
+    description: Note content
+    example: "Important discussion about project requirements"
+  category:
+    type: string
+    description: Note category
+    default: "idea"
+    example: "work"
+  status:
+    type: string
+    description: Note status
+    default: "active"
+    enum: ["active", "archived", "deleted"]
+  source:
+    type: string
+    description: Source of the note
+    default: "telegram"
+    example: "telegram"
+  voice_file_id:
+    type: string
+    description: Telegram voice file ID (if note from voice message)
+    example: "BAADBAADYwADBREAAZdmJhqJj6..."
+  transcription:
+    type: string
+    description: Voice transcription text
+    example: "This is transcribed voice message content"
+  metadata:
+    type: object
+    description: Additional metadata as JSON
+    additionalProperties: true
+    example:
+      tags: ["urgent", "meeting"]
+      location: "office"
+required:
+  - chat_id
+  - content

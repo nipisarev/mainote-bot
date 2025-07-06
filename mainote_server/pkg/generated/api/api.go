@@ -29,6 +29,17 @@ type HealthAPIRouter interface {
 	CheckHealth(http.ResponseWriter, *http.Request)
 }
 
+// NotesAPIRouter defines the required methods for binding the api requests to a responses for the NotesAPI
+// The NotesAPIRouter implementation should parse necessary information from the http request,
+// pass the data to a NotesAPIServicer to perform the required actions, then write the service results to the http response.
+type NotesAPIRouter interface {
+	CreateNote(http.ResponseWriter, *http.Request)
+	DeleteNote(http.ResponseWriter, *http.Request)
+	GetNoteById(http.ResponseWriter, *http.Request)
+	GetNotes(http.ResponseWriter, *http.Request)
+	UpdateNote(http.ResponseWriter, *http.Request)
+}
+
 // UsersAPIRouter defines the required methods for binding the api requests to a responses for the UsersAPI
 // The UsersAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a UsersAPIServicer to perform the required actions, then write the service results to the http response.
@@ -54,6 +65,18 @@ type AppsAPIServicer interface {
 // and updated with the logic required for the API.
 type HealthAPIServicer interface {
 	CheckHealth(context.Context) (ImplResponse, error)
+}
+
+// NotesAPIServicer defines the api actions for the NotesAPI service
+// This interface intended to stay up to date with the openapi yaml used to generate it,
+// while the service implementation can be ignored with the .openapi-generator-ignore file
+// and updated with the logic required for the API.
+type NotesAPIServicer interface {
+	CreateNote(context.Context, CreateNoteRequest) (ImplResponse, error)
+	DeleteNote(context.Context, string, string) (ImplResponse, error)
+	GetNoteById(context.Context, string, string) (ImplResponse, error)
+	GetNotes(context.Context, string, string, string, int32, int32) (ImplResponse, error)
+	UpdateNote(context.Context, string, string, UpdateNoteRequest) (ImplResponse, error)
 }
 
 // UsersAPIServicer defines the api actions for the UsersAPI service

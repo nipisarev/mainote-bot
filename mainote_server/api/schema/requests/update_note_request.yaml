@@ -1,0 +1,35 @@
+type: object
+properties:
+  title:
+    type: string
+    description: Note title (optional)
+    example: "Updated Meeting Notes"
+  content:
+    type: string
+    description: Note content
+    example: "Updated discussion about project requirements"
+  category:
+    type: string
+    description: Note category
+    example: "work"
+  status:
+    type: string
+    description: Note status
+    enum: ["active", "archived", "deleted"]
+    example: "active"
+  voice_file_id:
+    type: string
+    description: Telegram voice file ID (if note from voice message)
+    example: "BAADBAADYwADBREAAZdmJhqJj6..."
+  transcription:
+    type: string
+    description: Voice transcription text
+    example: "This is updated transcribed voice message content"
+  metadata:
+    type: object
+    description: Additional metadata as JSON
+    additionalProperties: true
+    example:
+      tags: ["urgent", "meeting", "updated"]
+      location: "office"
+# At least one field must be provided for update
