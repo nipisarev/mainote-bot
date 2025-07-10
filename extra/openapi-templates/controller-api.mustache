@@ -2,10 +2,12 @@
 package {{packageName}}
 
 import (
-	"encoding/json"
+	"encoding/json"{{#operations}}{{#operation}}{{#allParams}}{{#isEnum}}
+	"errors"{{/isEnum}}{{/allParams}}{{/operation}}{{/operations}}
 	"mainote-server/pkg/server/middleware"
 	"mainote-server/pkg/validator"
-	"net/http"
+	"net/http"{{#operations}}{{#operation}}{{#allParams}}{{#isEnum}}
+	"slices"{{/isEnum}}{{/allParams}}{{/operation}}{{/operations}}
 	"strings"
 
 	v "github.com/go-playground/validator/v10"

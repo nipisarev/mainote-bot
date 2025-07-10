@@ -1,0 +1,70 @@
+type: object
+properties:
+  integration_id:
+    type: string
+    format: uuid
+    description: Unique identifier for the integration
+  app_id:
+    type: string
+    format: uuid
+    description: App ID linked to this integration
+  app:
+    type: object
+    description: App information
+    properties:
+      app_id:
+        type: string
+        format: uuid
+        description: App ID
+      provider:
+        type: string
+        description: Provider name
+      name:
+        type: string
+        description: App name
+      description:
+        type: string
+        nullable: true
+        description: App description
+    required:
+      - app_id
+      - provider
+      - name
+  chat_id:
+    type: string
+    description: Telegram chat ID
+  status:
+    type: string
+    description: Integration status
+    enum: ["active", "inactive", "error", "pending_auth"]
+  auth_type:
+    type: string
+    description: Authentication type used by the integration
+    enum: ["oauth2", "api_key", "basic_auth", "token", "custom"]
+  auth_data:
+    type: object
+    description: Authentication data (sensitive data should be masked)
+    additionalProperties: true
+  config:
+    type: object
+    description: Integration configuration as JSON
+    additionalProperties: true
+  created_at:
+    type: string
+    format: date-time
+    description: When the integration was created
+  updated_at:
+    type: string
+    format: date-time
+    description: When the integration was last updated
+required:
+  - integration_id
+  - app_id
+  - app
+  - chat_id
+  - status
+  - auth_type
+  - auth_data
+  - config
+  - created_at
+  - updated_at

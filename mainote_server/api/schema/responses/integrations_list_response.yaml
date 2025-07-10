@@ -1,0 +1,35 @@
+type: object
+properties:
+  integrations:
+    type: array
+    description: Array of integration objects
+    items:
+      $ref: "./integration_response.yaml"
+  pagination:
+    type: object
+    description: Pagination information
+    properties:
+      total_count:
+        type: integer
+        description: Total number of integrations
+        example: 5
+      limit:
+        type: integer
+        description: Maximum number of integrations returned
+        example: 50
+      offset:
+        type: integer
+        description: Number of integrations skipped
+        example: 0
+      has_more:
+        type: boolean
+        description: Whether there are more integrations available
+        example: false
+    required:
+      - total_count
+      - limit
+      - offset
+      - has_more
+required:
+  - integrations
+  - pagination 

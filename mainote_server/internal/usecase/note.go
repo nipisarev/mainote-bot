@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -56,6 +57,16 @@ func (uc *noteUsecase) CreateNote(ctx context.Context, chatID, title, content, c
 		source = "telegram"
 	}
 
+	// Convert metadata to json.RawMessage
+	var metadataJSON *json.RawMessage
+	if metadata != nil {
+		metadataBytes, err := json.Marshal(metadata)
+		if err != nil {
+			return nil, fmt.Errorf("invalid metadata format: %w", err)
+		}
+		metadataJSON = (*json.RawMessage)(&metadataBytes)
+	}
+
 	// Create the note
 	note := &domain.Note{
 		NoteID:        uuid.New(),
@@ -68,7 +79,7 @@ func (uc *noteUsecase) CreateNote(ctx context.Context, chatID, title, content, c
 		Source:        source,
 		VoiceFileID:   voiceFileID,
 		Transcription: transcription,
-		Metadata:      metadata,
+		Metadata:      metadataJSON,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
@@ -189,7 +200,11 @@ func (uc *noteUsecase) UpdateNote(ctx context.Context, noteID uuid.UUID, chatID 
 		}
 	}
 	if metadata != nil {
-		updatedNote.Metadata = metadata
+		metadataBytes, err := json.Marshal(metadata)
+		if err != nil {
+			return nil, fmt.Errorf("invalid metadata format: %w", err)
+		}
+		updatedNote.Metadata = (*json.RawMessage)(&metadataBytes)
 	}
 
 	if err := uc.noteRepo.UpdateForUser(ctx, noteID, chatID, &updatedNote); err != nil {

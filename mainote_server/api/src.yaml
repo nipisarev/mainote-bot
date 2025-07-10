@@ -44,6 +44,10 @@ paths:
     $ref: 'path/auth.yaml'
   /api/v1/apps:
     $ref: 'path/apps.yaml'
+  /api/v1/integrations:
+    $ref: 'path/integrations.yaml'
+  /api/v1/integration/{integration_id}:
+    $ref: 'path/integration.yaml'
   /api/v1/notes:
     $ref: 'path/notes.yaml'
   /api/v1/note/{note_id}:
@@ -68,6 +72,8 @@ tags:
     description: User management operations
   - name: Apps
     description: App management operations for customer installations
+  - name: Integrations
+    description: Integration management operations for connecting external services
   - name: Notes
     description: Note management operations
 

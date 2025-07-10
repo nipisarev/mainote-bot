@@ -1,0 +1,31 @@
+type: object
+properties:
+  status:
+    type: string
+    description: Integration status
+    enum: ["active", "inactive", "error", "pending_auth"]
+    example: "active"
+  auth_type:
+    type: string
+    description: Authentication type used by the integration
+    enum: ["oauth2", "api_key", "basic_auth", "token", "custom"]
+    example: "api_key"
+  auth_data:
+    type: object
+    description: Authentication data specific to the provider
+    additionalProperties: true
+    example:
+      api_key: "secret_xxxxxxxxxxxx"
+      database_id: "1234567890abcdef"
+  config:
+    type: object
+    description: Integration configuration as JSON
+    additionalProperties: true
+    example:
+      sync_frequency: "hourly"
+      auto_sync: false
+      notification_preferences:
+        enable_notifications: true
+        email_notifications: true
+        slack_notifications: false
+# Note: All fields are optional for updates 

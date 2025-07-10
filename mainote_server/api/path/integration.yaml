@@ -1,0 +1,140 @@
+get:
+  tags:
+    - Integrations
+  summary: Get a single integration by ID
+  description: Retrieves a specific integration by ID for the authenticated user
+  operationId: getIntegrationById
+  parameters:
+    - name: integration_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Integration ID
+    - name: chat_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Telegram chat ID for user authorization
+  responses:
+    "200":
+      description: Integration retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/integration_response.yaml"
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "404":
+      description: Integration not found
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "500":
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+
+put:
+  tags:
+    - Integrations
+  summary: Update an integration
+  description: Updates an existing integration for the authenticated user
+  operationId: updateIntegration
+  parameters:
+    - name: integration_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Integration ID
+    - name: chat_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Telegram chat ID for user authorization
+  requestBody:
+    description: Integration update data
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../schema/requests/update_integration_request.yaml"
+  responses:
+    "200":
+      description: Integration updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/integration_response.yaml"
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "404":
+      description: Integration not found
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "500":
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+
+delete:
+  tags:
+    - Integrations
+  summary: Delete an integration
+  description: Soft deletes an integration for the authenticated user
+  operationId: deleteIntegration
+  parameters:
+    - name: integration_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Integration ID
+    - name: chat_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Telegram chat ID for user authorization
+  responses:
+    "204":
+      description: Integration deleted successfully
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "404":
+      description: Integration not found
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "500":
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml" 

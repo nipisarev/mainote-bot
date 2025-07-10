@@ -1,0 +1,712 @@
+{
+	"info": {
+		"_postman_id": "b8a5d3c2-4e6f-4b8a-9c1d-2e3f4a5b6c7d",
+		"name": "Mainote Integrations API",
+		"description": "API collection for managing integrations with external services like Notion",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Integrations",
+			"item": [
+				{
+					"name": "Create Notion Integration",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"app_id\": \"{{notion_app_id}}\",\n  \"chat_id\": \"{{test_chat_id}}\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n  },\n  \"config\": {\n    \"sync_enabled\": true,\n    \"auto_create_pages\": true,\n    \"default_properties\": {\n      \"status\": \"Draft\",\n      \"category\": \"Note\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integrations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							]
+						},
+						"description": "Creates a new integration with Notion. This endpoint allows users to connect their Notion workspace to Mainote for seamless note synchronization."
+					},
+					"response": [
+						{
+							"name": "Success - Integration Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"app_id\": \"{{notion_app_id}}\",\n  \"chat_id\": \"{{test_chat_id}}\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n  },\n  \"config\": {\n    \"sync_enabled\": true,\n    \"auto_create_pages\": true\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/integrations",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integrations"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"integration_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n  \"app\": {\n    \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n    \"provider\": \"notion\",\n    \"name\": \"Notion\",\n    \"description\": \"Notion workspace integration for note management\"\n  },\n  \"chat_id\": \"123456789\",\n  \"status\": \"active\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"***masked***\",\n    \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n  },\n  \"config\": {\n    \"sync_enabled\": true,\n    \"auto_create_pages\": true,\n    \"default_properties\": {\n      \"status\": \"Draft\",\n      \"category\": \"Note\"\n    }\n  },\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "List All Integrations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integrations?chat_id={{test_chat_id}}&limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Retrieves all integrations for a specific user with pagination support."
+					},
+					"response": [
+						{
+							"name": "Success - Integrations List",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/integrations?chat_id={{test_chat_id}}&limit=10&offset=0",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integrations"
+									],
+									"query": [
+										{
+											"key": "chat_id",
+											"value": "{{test_chat_id}}"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "offset",
+											"value": "0"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"integrations\": [\n    {\n      \"integration_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n      \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n      \"app\": {\n        \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n        \"provider\": \"notion\",\n        \"name\": \"Notion\",\n        \"description\": \"Notion workspace integration for note management\"\n      },\n      \"chat_id\": \"123456789\",\n      \"status\": \"active\",\n      \"auth_type\": \"api_key\",\n      \"auth_data\": {\n        \"api_key\": \"***masked***\",\n        \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n      },\n      \"config\": {\n        \"sync_enabled\": true,\n        \"auto_create_pages\": true\n      },\n      \"created_at\": \"2024-01-15T10:30:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"total_count\": 1,\n    \"limit\": 10,\n    \"offset\": 0,\n    \"has_more\": false\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "List Active Integrations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integrations?chat_id={{test_chat_id}}&status=active&limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Retrieves only active integrations for a specific user."
+					}
+				},
+				{
+					"name": "List Notion Integrations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integrations?chat_id={{test_chat_id}}&app_id={{notion_app_id}}&limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								},
+								{
+									"key": "app_id",
+									"value": "{{notion_app_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Retrieves integrations filtered by app_id (Notion in this case)."
+					}
+				},
+				{
+					"name": "Get Integration by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"{{integration_id}}"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Retrieves a specific integration by its ID."
+					},
+					"response": [
+						{
+							"name": "Success - Integration Details",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integration",
+										"{{integration_id}}"
+									],
+									"query": [
+										{
+											"key": "chat_id",
+											"value": "{{test_chat_id}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"integration_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n  \"app\": {\n    \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n    \"provider\": \"notion\",\n    \"name\": \"Notion\",\n    \"description\": \"Notion workspace integration for note management\"\n  },\n  \"chat_id\": \"123456789\",\n  \"status\": \"active\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"***masked***\",\n    \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n  },\n  \"config\": {\n    \"sync_enabled\": true,\n    \"auto_create_pages\": true,\n    \"default_properties\": {\n      \"status\": \"Draft\",\n      \"category\": \"Note\"\n    }\n  },\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Integration",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"active\",\n  \"config\": {\n    \"sync_enabled\": false,\n    \"auto_create_pages\": true,\n    \"default_properties\": {\n      \"status\": \"In Progress\",\n      \"category\": \"Task\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"{{integration_id}}"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Updates an existing integration. You can update status, auth_type, auth_data, and config fields."
+					},
+					"response": [
+						{
+							"name": "Success - Integration Updated",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"active\",\n  \"config\": {\n    \"sync_enabled\": false,\n    \"auto_create_pages\": true\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integration",
+										"{{integration_id}}"
+									],
+									"query": [
+										{
+											"key": "chat_id",
+											"value": "{{test_chat_id}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"integration_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n  \"app\": {\n    \"app_id\": \"a1b2c3d4-e5f6-7890-1234-567890abcdef\",\n    \"provider\": \"notion\",\n    \"name\": \"Notion\",\n    \"description\": \"Notion workspace integration for note management\"\n  },\n  \"chat_id\": \"123456789\",\n  \"status\": \"active\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"***masked***\",\n    \"database_id\": \"a1b2c3d4e5f6789012345678901234567890abcd\"\n  },\n  \"config\": {\n    \"sync_enabled\": false,\n    \"auto_create_pages\": true,\n    \"default_properties\": {\n      \"status\": \"In Progress\",\n      \"category\": \"Task\"\n    }\n  },\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:35:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Integration Auth Data",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"auth_data\": {\n    \"api_key\": \"secret_new_api_key_here_xxxxxxxxxxxxxxxxxxxx\",\n    \"database_id\": \"new_database_id_here_12345678901234567890\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"{{integration_id}}"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Updates the authentication data for an integration (e.g., new API key or database ID)."
+					}
+				},
+				{
+					"name": "Disable Integration",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"inactive\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"{{integration_id}}"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Disables an integration by setting its status to inactive."
+					}
+				},
+				{
+					"name": "Delete Integration",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"{{integration_id}}"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Soft deletes an integration. The integration will be marked as deleted but not removed from the database."
+					},
+					"response": [
+						{
+							"name": "Success - Integration Deleted",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/integration/{{integration_id}}?chat_id={{test_chat_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integration",
+										"{{integration_id}}"
+									],
+									"query": [
+										{
+											"key": "chat_id",
+											"value": "{{test_chat_id}}"
+										}
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": null,
+							"header": [],
+							"cookie": [],
+							"body": null
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Error Cases",
+			"item": [
+				{
+					"name": "Create Integration - Invalid App ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"app_id\": \"invalid-uuid-format\",\n  \"chat_id\": \"{{test_chat_id}}\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integrations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							]
+						},
+						"description": "Test case for invalid app_id format."
+					},
+					"response": [
+						{
+							"name": "Error - Invalid App ID",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"app_id\": \"invalid-uuid-format\",\n  \"chat_id\": \"{{test_chat_id}}\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/integrations",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integrations"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"error\": \"Bad request\",\n  \"message\": \"Invalid app_id format\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Create Integration - User Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"app_id\": \"{{notion_app_id}}\",\n  \"chat_id\": \"nonexistent_chat_id\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/integrations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integrations"
+							]
+						},
+						"description": "Test case for nonexistent user."
+					},
+					"response": [
+						{
+							"name": "Error - User Not Found",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"app_id\": \"{{notion_app_id}}\",\n  \"chat_id\": \"nonexistent_chat_id\",\n  \"auth_type\": \"api_key\",\n  \"auth_data\": {\n    \"api_key\": \"secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/integrations",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integrations"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"error\": \"User not found\",\n  \"message\": \"No user found with the provided chat_id\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Integration - Not Found",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/integration/nonexistent-id?chat_id={{test_chat_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"integration",
+								"nonexistent-id"
+							],
+							"query": [
+								{
+									"key": "chat_id",
+									"value": "{{test_chat_id}}"
+								}
+							]
+						},
+						"description": "Test case for nonexistent integration."
+					},
+					"response": [
+						{
+							"name": "Error - Integration Not Found",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/integration/nonexistent-id?chat_id={{test_chat_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"integration",
+										"nonexistent-id"
+									],
+									"query": [
+										{
+											"key": "chat_id",
+											"value": "{{test_chat_id}}"
+										}
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"error\": \"Integration not found\",\n  \"message\": \"No integration found with the provided integration_id\"\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "test_chat_id",
+			"value": "123456789",
+			"type": "string"
+		},
+		{
+			"key": "notion_app_id",
+			"value": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+			"type": "string"
+		},
+		{
+			"key": "integration_id",
+			"value": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+			"type": "string"
+		}
+	]
+} 

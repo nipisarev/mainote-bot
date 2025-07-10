@@ -34,6 +34,8 @@ tags:
   name: Users
 - description: App management operations for customer installations
   name: Apps
+- description: Integration management operations for connecting external services
+  name: Integrations
 - description: Note management operations
   name: Notes
 paths:
@@ -348,6 +350,257 @@ paths:
       summary: Get all available apps for installation
       tags:
       - Apps
+  /api/v1/integrations:
+    get:
+      description: Retrieve a list of integrations for the user with optional filters
+      operationId: getIntegrations
+      parameters:
+      - description: Telegram chat ID to filter integrations
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      - description: Filter integrations by status
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+          - active
+          - inactive
+          - error
+          - pending_auth
+          type: string
+      - description: Filter integrations by app ID
+        in: query
+        name: app_id
+        required: false
+        schema:
+          format: uuid
+          type: string
+      - description: Maximum number of integrations to return
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          maximum: 100
+          minimum: 1
+          type: integer
+      - description: Number of integrations to skip
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/integrations_list_response'
+          description: Integrations retrieved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: User not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Get user's integrations
+      tags:
+      - Integrations
+    post:
+      description: Creates a new integration for the user
+      operationId: createIntegration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_integration_request'
+        description: Integration object that needs to be created
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/integration_response'
+          description: Integration created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: User or app not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Create a new integration
+      tags:
+      - Integrations
+  /api/v1/integration/{integration_id}:
+    delete:
+      description: Soft deletes an integration for the authenticated user
+      operationId: deleteIntegration
+      parameters:
+      - description: Integration ID
+        in: path
+        name: integration_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Integration deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Integration not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Delete an integration
+      tags:
+      - Integrations
+    get:
+      description: Retrieves a specific integration by ID for the authenticated user
+      operationId: getIntegrationById
+      parameters:
+      - description: Integration ID
+        in: path
+        name: integration_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/integration_response'
+          description: Integration retrieved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Integration not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Get a single integration by ID
+      tags:
+      - Integrations
+    put:
+      description: Updates an existing integration for the authenticated user
+      operationId: updateIntegration
+      parameters:
+      - description: Integration ID
+        in: path
+        name: integration_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - description: Telegram chat ID for user authorization
+        in: query
+        name: chat_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_integration_request'
+        description: Integration update data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/integration_response'
+          description: Integration updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Invalid input
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Integration not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+          description: Internal server error
+      summary: Update an integration
+      tags:
+      - Integrations
   /api/v1/notes:
     get:
       description: Retrieves a list of notes for the user associated with the chat_id.
@@ -876,6 +1129,229 @@ components:
       - apps
       - count
       type: object
+    integrations_list_response:
+      example:
+        pagination:
+          offset: 0
+          total_count: 5
+          limit: 50
+          has_more: false
+        integrations:
+        - app:
+            provider: provider
+            name: name
+            description: description
+            app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          auth_type: oauth2
+          integration_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          created_at: 2000-01-23T04:56:07.000+00:00
+          app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          auth_data:
+            key: ""
+          config:
+            key: ""
+          chat_id: chat_id
+          status: active
+        - app:
+            provider: provider
+            name: name
+            description: description
+            app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          auth_type: oauth2
+          integration_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          created_at: 2000-01-23T04:56:07.000+00:00
+          app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          auth_data:
+            key: ""
+          config:
+            key: ""
+          chat_id: chat_id
+          status: active
+      properties:
+        integrations:
+          description: Array of integration objects
+          items:
+            $ref: '#/components/schemas/integration_response'
+          type: array
+        pagination:
+          $ref: '#/components/schemas/integrations_list_response_pagination'
+      required:
+      - integrations
+      - pagination
+      type: object
+    create_integration_request:
+      properties:
+        chat_id:
+          description: Telegram chat ID
+          example: "123456789"
+          type: string
+        app_id:
+          description: App ID to link with the integration
+          example: 550e8400-e29b-41d4-a716-446655440000
+          format: uuid
+          type: string
+        status:
+          default: active
+          description: Integration status
+          enum:
+          - active
+          - inactive
+          - error
+          - pending_auth
+          type: string
+        auth_type:
+          description: Authentication type used by the integration
+          enum:
+          - oauth2
+          - api_key
+          - basic_auth
+          - token
+          - custom
+          example: api_key
+          type: string
+        auth_data:
+          additionalProperties: true
+          description: Authentication data specific to the provider
+          example:
+            api_key: secret_xxxxxxxxxxxx
+            database_id: 1234567890abcdef
+          type: object
+        config:
+          additionalProperties: true
+          default: {}
+          description: Integration configuration as JSON
+          example:
+            sync_frequency: daily
+            auto_sync: true
+            notification_preferences:
+              enable_notifications: true
+              email_notifications: false
+          type: object
+      required:
+      - app_id
+      - auth_data
+      - auth_type
+      - chat_id
+      type: object
+    integration_response:
+      example:
+        app:
+          provider: provider
+          name: name
+          description: description
+          app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        auth_type: oauth2
+        integration_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        created_at: 2000-01-23T04:56:07.000+00:00
+        app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        auth_data:
+          key: ""
+        config:
+          key: ""
+        chat_id: chat_id
+        status: active
+      properties:
+        integration_id:
+          description: Unique identifier for the integration
+          format: uuid
+          type: string
+        app_id:
+          description: App ID linked to this integration
+          format: uuid
+          type: string
+        app:
+          $ref: '#/components/schemas/integration_response_app'
+        chat_id:
+          description: Telegram chat ID
+          type: string
+        status:
+          description: Integration status
+          enum:
+          - active
+          - inactive
+          - error
+          - pending_auth
+          type: string
+        auth_type:
+          description: Authentication type used by the integration
+          enum:
+          - oauth2
+          - api_key
+          - basic_auth
+          - token
+          - custom
+          type: string
+        auth_data:
+          additionalProperties: true
+          description: Authentication data (sensitive data should be masked)
+          type: object
+        config:
+          additionalProperties: true
+          description: Integration configuration as JSON
+          type: object
+        created_at:
+          description: When the integration was created
+          format: date-time
+          type: string
+        updated_at:
+          description: When the integration was last updated
+          format: date-time
+          type: string
+      required:
+      - app
+      - app_id
+      - auth_data
+      - auth_type
+      - chat_id
+      - config
+      - created_at
+      - integration_id
+      - status
+      - updated_at
+      type: object
+    update_integration_request:
+      properties:
+        status:
+          description: Integration status
+          enum:
+          - active
+          - inactive
+          - error
+          - pending_auth
+          example: active
+          type: string
+        auth_type:
+          description: Authentication type used by the integration
+          enum:
+          - oauth2
+          - api_key
+          - basic_auth
+          - token
+          - custom
+          example: api_key
+          type: string
+        auth_data:
+          additionalProperties: true
+          description: Authentication data specific to the provider
+          example:
+            api_key: secret_xxxxxxxxxxxx
+            database_id: 1234567890abcdef
+          type: object
+        config:
+          additionalProperties: true
+          description: Integration configuration as JSON
+          example:
+            sync_frequency: hourly
+            auto_sync: false
+            notification_preferences:
+              enable_notifications: true
+              email_notifications: true
+              slack_notifications: false
+          type: object
+      type: object
     notes_list_response:
       example:
         total: 150
@@ -1151,4 +1627,61 @@ components:
       required:
       - app_id
       - name
+      type: object
+    integrations_list_response_pagination:
+      description: Pagination information
+      example:
+        offset: 0
+        total_count: 5
+        limit: 50
+        has_more: false
+      properties:
+        total_count:
+          description: Total number of integrations
+          example: 5
+          type: integer
+        limit:
+          description: Maximum number of integrations returned
+          example: 50
+          type: integer
+        offset:
+          description: Number of integrations skipped
+          example: 0
+          type: integer
+        has_more:
+          description: Whether there are more integrations available
+          example: false
+          type: boolean
+      required:
+      - has_more
+      - limit
+      - offset
+      - total_count
+      type: object
+    integration_response_app:
+      description: App information
+      example:
+        provider: provider
+        name: name
+        description: description
+        app_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        app_id:
+          description: App ID
+          format: uuid
+          type: string
+        provider:
+          description: Provider name
+          type: string
+        name:
+          description: App name
+          type: string
+        description:
+          description: App description
+          nullable: true
+          type: string
+      required:
+      - app_id
+      - name
+      - provider
       type: object

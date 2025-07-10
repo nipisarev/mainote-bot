@@ -29,6 +29,17 @@ type HealthAPIRouter interface {
 	CheckHealth(http.ResponseWriter, *http.Request)
 }
 
+// IntegrationsAPIRouter defines the required methods for binding the api requests to a responses for the IntegrationsAPI
+// The IntegrationsAPIRouter implementation should parse necessary information from the http request,
+// pass the data to a IntegrationsAPIServicer to perform the required actions, then write the service results to the http response.
+type IntegrationsAPIRouter interface {
+	CreateIntegration(http.ResponseWriter, *http.Request)
+	DeleteIntegration(http.ResponseWriter, *http.Request)
+	GetIntegrationById(http.ResponseWriter, *http.Request)
+	GetIntegrations(http.ResponseWriter, *http.Request)
+	UpdateIntegration(http.ResponseWriter, *http.Request)
+}
+
 // NotesAPIRouter defines the required methods for binding the api requests to a responses for the NotesAPI
 // The NotesAPIRouter implementation should parse necessary information from the http request,
 // pass the data to a NotesAPIServicer to perform the required actions, then write the service results to the http response.
@@ -65,6 +76,18 @@ type AppsAPIServicer interface {
 // and updated with the logic required for the API.
 type HealthAPIServicer interface {
 	CheckHealth(context.Context) (ImplResponse, error)
+}
+
+// IntegrationsAPIServicer defines the api actions for the IntegrationsAPI service
+// This interface intended to stay up to date with the openapi yaml used to generate it,
+// while the service implementation can be ignored with the .openapi-generator-ignore file
+// and updated with the logic required for the API.
+type IntegrationsAPIServicer interface {
+	CreateIntegration(context.Context, CreateIntegrationRequest) (ImplResponse, error)
+	DeleteIntegration(context.Context, string, string) (ImplResponse, error)
+	GetIntegrationById(context.Context, string, string) (ImplResponse, error)
+	GetIntegrations(context.Context, string, string, string, int32, int32) (ImplResponse, error)
+	UpdateIntegration(context.Context, string, string, UpdateIntegrationRequest) (ImplResponse, error)
 }
 
 // NotesAPIServicer defines the api actions for the NotesAPI service

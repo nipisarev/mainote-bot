@@ -1,0 +1,44 @@
+type: object
+properties:
+  chat_id:
+    type: string
+    description: Telegram chat ID
+    example: "123456789"
+  app_id:
+    type: string
+    format: uuid
+    description: App ID to link with the integration
+    example: "550e8400-e29b-41d4-a716-446655440000"
+  status:
+    type: string
+    description: Integration status
+    default: "active"
+    enum: ["active", "inactive", "error", "pending_auth"]
+  auth_type:
+    type: string
+    description: Authentication type used by the integration
+    enum: ["oauth2", "api_key", "basic_auth", "token", "custom"]
+    example: "api_key"
+  auth_data:
+    type: object
+    description: Authentication data specific to the provider
+    additionalProperties: true
+    example:
+      api_key: "secret_xxxxxxxxxxxx"
+      database_id: "1234567890abcdef"
+  config:
+    type: object
+    description: Integration configuration as JSON
+    additionalProperties: true
+    default: {}
+    example:
+      sync_frequency: "daily"
+      auto_sync: true
+      notification_preferences:
+        enable_notifications: true
+        email_notifications: false
+required:
+  - chat_id
+  - app_id
+  - auth_type
+  - auth_data 

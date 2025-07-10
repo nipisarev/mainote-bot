@@ -38,6 +38,7 @@ func TestNoteRepository_Create(t *testing.T) {
 		Category:  "idea",
 		Status:    "active",
 		Source:    "telegram",
+		Metadata:  nil, // Use nil for empty metadata
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -248,6 +249,7 @@ func TestNoteRepository_UpdateForUser(t *testing.T) {
 		Content:   "Updated content",
 		Category:  "work",
 		Status:    "active",
+		Metadata:  nil, // Use nil for empty metadata
 		UpdatedAt: now,
 	}
 
@@ -287,6 +289,7 @@ func TestNoteRepository_UpdateForUser_NotFound(t *testing.T) {
 		Content:   "Updated content",
 		Category:  "work",
 		Status:    "active",
+		Metadata:  nil, // Use nil for empty metadata
 		UpdatedAt: now,
 	}
 
