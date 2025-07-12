@@ -52,25 +52,56 @@ CREATE INDEX idx_note_integration_integration_id ON note_integration(integration
 CREATE INDEX idx_note_integration_sync_status ON note_integration(sync_status);
 
 -- Create triggers to automatically update updated_at columns
-CREATE TRIGGER update_app_updated_at 
+CREATE TRIGGER update_app_updated_at
     BEFORE UPDATE ON app
-    FOR EACH ROW 
+    FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_integration_updated_at 
+CREATE TRIGGER update_integration_updated_at
     BEFORE UPDATE ON integration
-    FOR EACH ROW 
+    FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_note_integration_updated_at 
+CREATE TRIGGER update_note_integration_updated_at
     BEFORE UPDATE ON note_integration
-    FOR EACH ROW 
+    FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert default Notion integration app
-INSERT INTO app (provider, name, description) VALUES 
+INSERT INTO app (provider, name, description) VALUES
 (
     'notion',
     'Notion',
-    'Notion integration for syncing notes and tasks. This app allows users to connect their Notion account for seamless note management and task synchronization.'
+    '## 🧠 Notion Integration: Notes & Tasks Sync
+
+    This app connects to your Notion workspace to store and manage your notes and tasks. It enables automatic syncing between Telegram input and a structured Notion database, helping you organize ideas, prioritize work, and plan your day.
+
+    ### 🔐 Setup Instructions
+
+    1. **Create Notion Integration Token**
+       - Go to [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations)
+       - Click **"New integration"**
+       - Give it a name (e.g., `Mainote Assistant`)
+       - Copy the **Internal Integration Token**
+
+    2. **Create a Database in Notion**
+       - Create a new database (Table view recommended)
+       - Add the following required fields (exact field names):
+         - `Title` – (Title field, default)
+         - `Content` – (Text)
+         - `Status` – (Select, values: `Inbox`, `Ready`, `In Progress`, `Done`)
+         - `Category` – (Select, values: `Task`, `Idea`, `Personal`, `Note`)
+         - `Created Time` – (Created time, auto-generated)
+
+    3. **Share the Database with the Integration**
+       - Open the database in Notion
+       - Click **Share** → **Invite**
+       - Select your integration (e.g., `Mainote Assistant`) and click **Invite**
+
+    4. **Provide These Details to the App**
+       - Your **Notion Integration Token**
+       - Your **Database ID** (found in the URL: `https://www.notion.so/yourworkspace/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=...`)
+
+    ### ✅ After Setup
+    Once configured, all your voice/text notes sent through the assistant will be automatically structured and stored in Notion. You can view, filter, and manage them directly in your Notion workspace.'
 );
