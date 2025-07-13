@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,16 +24,18 @@ type NoteUsecase interface {
 }
 
 // NewNoteUsecase creates a new instance of NoteUsecase.
-func NewNoteUsecase(noteRepo repository.NoteRepository, userRepo repository.UserRepository) NoteUsecase {
+func NewNoteUsecase(noteRepo repository.NoteRepository, userRepo repository.UserRepository, syncService domain.SyncService) NoteUsecase {
 	return &noteUsecase{
-		noteRepo: noteRepo,
-		userRepo: userRepo,
+		noteRepo:    noteRepo,
+		userRepo:    userRepo,
+		syncService: syncService,
 	}
 }
 
 type noteUsecase struct {
-	noteRepo repository.NoteRepository
-	userRepo repository.UserRepository
+	noteRepo    repository.NoteRepository
+	userRepo    repository.UserRepository
+	syncService domain.SyncService
 }
 
 // CreateNote creates a new note for a user.
@@ -92,6 +95,15 @@ func (uc *noteUsecase) CreateNote(ctx context.Context, chatID, title, content, c
 	if err := uc.noteRepo.Create(ctx, note); err != nil {
 		return nil, fmt.Errorf("failed to create note: %w", err)
 	}
+
+	// Asynchronously sync the note to active integrations
+	go func() {
+		// Create a new context for the sync operation to avoid cancellation issues
+		syncCtx := context.Background()
+		if err := uc.syncService.SyncNoteToIntegrations(syncCtx, note); err != nil {
+			log.Printf("Failed to sync note %s to integrations: %v", note.NoteID, err)
+		}
+	}()
 
 	return note, nil
 }

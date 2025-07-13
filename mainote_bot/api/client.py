@@ -414,3 +414,226 @@ class MainoteAPIClient:
                 raise  # Re-raise our custom exceptions
             logger.error(f"Unexpected error getting notes for chat_id {chat_id}: {str(e)}")
             raise Exception("An unexpected error occurred - please try again later")
+
+    # Apps and Integration methods
+    async def get_apps(self) -> List[Dict[str, Any]]:
+        """
+        Get all available apps for installation.
+        
+        Returns:
+            List of available apps
+            
+        Raises:
+            Exception: If getting apps fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/apps"
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url)
+                
+                if response.status_code == 200:
+                    apps_data = response.json()
+                    logger.info(f"Retrieved {len(apps_data.get('apps', []))} available apps")
+                    return apps_data.get('apps', [])
+                else:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
+                    logger.error(f"API error getting apps: {response.status_code} - {error_data}")
+                    raise Exception(f"Failed to get apps: {error_data.get('message', 'Unknown error')}")
+                    
+        except httpx.TimeoutException:
+            logger.error("Timeout getting apps")
+            raise Exception("Server timeout - please try again later")
+        except httpx.RequestError as e:
+            logger.error(f"Request error getting apps: {str(e)}")
+            raise Exception("Unable to connect to server - please try again later")
+        except Exception as e:
+            if any(msg in str(e) for msg in ["Failed to get apps", "Server timeout", "Unable to connect"]):
+                raise  # Re-raise our custom exceptions
+            logger.error(f"Unexpected error getting apps: {str(e)}")
+            raise Exception("An unexpected error occurred - please try again later")
+
+    async def get_integrations(self, chat_id: str, status: str = None, app_id: str = None, 
+                              limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """
+        Get integrations for a user.
+        
+        Args:
+            chat_id: Telegram chat ID as string
+            status: Filter by status (optional)
+            app_id: Filter by app ID (optional)
+            limit: Maximum number of integrations to return (default: 50)
+            offset: Number of integrations to skip (default: 0)
+            
+        Returns:
+            Integrations list data with pagination info
+            
+        Raises:
+            Exception: If getting integrations fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/integrations"
+            params = {
+                "chat_id": chat_id,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            if status:
+                params["status"] = status
+            if app_id:
+                params["app_id"] = app_id
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params)
+                
+                if response.status_code == 200:
+                    integrations_data = response.json()
+                    logger.info(f"Retrieved {len(integrations_data.get('integrations', []))} integrations for chat_id {chat_id}")
+                    return integrations_data
+                else:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
+                    logger.error(f"API error getting integrations for chat_id {chat_id}: {response.status_code} - {error_data}")
+                    
+                    if response.status_code == 404:
+                        raise Exception("User not found - please complete setup first")
+                    else:
+                        raise Exception(f"Failed to get integrations: {error_data.get('message', 'Unknown error')}")
+                        
+        except httpx.TimeoutException:
+            logger.error(f"Timeout getting integrations for chat_id {chat_id}")
+            raise Exception("Server timeout - please try again later")
+        except httpx.RequestError as e:
+            logger.error(f"Request error getting integrations for chat_id {chat_id}: {str(e)}")
+            raise Exception("Unable to connect to server - please try again later")
+        except Exception as e:
+            if any(msg in str(e) for msg in ["User not found", "Failed to get integrations", "Server timeout", "Unable to connect"]):
+                raise  # Re-raise our custom exceptions
+            logger.error(f"Unexpected error getting integrations for chat_id {chat_id}: {str(e)}")
+            raise Exception("An unexpected error occurred - please try again later")
+
+    async def create_integration(self, chat_id: str, app_id: str, auth_type: str, 
+                               auth_data: Dict[str, Any], config: Dict[str, Any] = None,
+                               status: str = "active") -> Dict[str, Any]:
+        """
+        Create a new integration.
+        
+        Args:
+            chat_id: Telegram chat ID as string
+            app_id: App ID to integrate with
+            auth_type: Authentication type (e.g., "api_key", "oauth2")
+            auth_data: Authentication data specific to the provider
+            config: Integration configuration (optional)
+            status: Integration status (default: "active")
+            
+        Returns:
+            Created integration data
+            
+        Raises:
+            Exception: If integration creation fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/integrations"
+            payload = {
+                "chat_id": chat_id,
+                "app_id": app_id,
+                "auth_type": auth_type,
+                "auth_data": auth_data,
+                "status": status
+            }
+            
+            if config:
+                payload["config"] = config
+            
+            logger.info(f"Creating integration for chat_id {chat_id} with app_id {app_id}")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 201:
+                    integration_data = response.json()
+                    logger.info(f"Successfully created integration {integration_data.get('integration_id')} for chat_id {chat_id}")
+                    return integration_data
+                else:
+                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
+                    logger.error(f"API error creating integration for chat_id {chat_id}: {response.status_code} - {error_data}")
+                    
+                    if response.status_code == 400:
+                        raise Exception(f"Invalid input: {error_data.get('message', 'Please check your data')}")
+                    elif response.status_code == 404:
+                        raise Exception("User or app not found")
+                    elif response.status_code == 409:
+                        raise Exception("Integration already exists for this app")
+                    else:
+                        raise Exception(f"Integration creation failed: {error_data.get('message', 'Unknown error')}")
+                        
+        except httpx.TimeoutException:
+            logger.error(f"Timeout creating integration for chat_id {chat_id}")
+            raise Exception("Server timeout - please try again later")
+        except httpx.RequestError as e:
+            logger.error(f"Request error creating integration for chat_id {chat_id}: {str(e)}")
+            raise Exception("Unable to connect to server - please try again later")
+        except Exception as e:
+            if any(msg in str(e) for msg in ["Invalid input", "User or app not found", "Integration already exists", "Integration creation failed", "Server timeout", "Unable to connect"]):
+                raise  # Re-raise our custom exceptions
+            logger.error(f"Unexpected error creating integration for chat_id {chat_id}: {str(e)}")
+            raise Exception("An unexpected error occurred - please try again later")
+
+    async def test_integration(self, chat_id: str, integration_id: str, test_data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Test an integration by creating a sample note.
+        
+        Args:
+            chat_id: Telegram chat ID as string
+            integration_id: Integration ID to test
+            test_data: Optional test data
+            
+        Returns:
+            Test result data
+            
+        Raises:
+            Exception: If integration test fails
+        """
+        try:
+            # Create a test note to verify the integration works
+            test_note_data = {
+                "title": "🧪 Test Note from Mainote Bot",
+                "content": "This is a test note created during integration setup. If you see this, your integration is working correctly!",
+                "category": "idea",
+                "status": "active",
+                "source": "telegram_integration_test"
+            }
+            
+            if test_data:
+                test_note_data.update(test_data)
+            
+            # Create the test note
+            note_result = await self.create_note(
+                chat_id=chat_id,
+                title=test_note_data["title"],
+                content=test_note_data["content"],
+                category=test_note_data["category"],
+                status=test_note_data["status"],
+                source=test_note_data["source"],
+                metadata={"integration_test": True, "integration_id": integration_id}
+            )
+            
+            logger.info(f"Successfully tested integration {integration_id} for chat_id {chat_id}")
+            
+            return {
+                "success": True,
+                "message": "Integration test successful",
+                "test_note": note_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Integration test failed for integration {integration_id}: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Integration test failed: {str(e)}",
+                "error": str(e)
+            }

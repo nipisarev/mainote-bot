@@ -13,6 +13,7 @@ import (
 	"mainote-server/internal/delivery/http/handler"
 	"mainote-server/internal/delivery/http/middleware"
 	"mainote-server/internal/repository"
+	"mainote-server/internal/sync"
 	"mainote-server/internal/usecase"
 	api "mainote-server/pkg/generated/api"
 
@@ -55,17 +56,24 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	appRepo := repository.NewAppRepository(db)
 	noteRepo := repository.NewNoteRepository(db)
+	integrationRepo := repository.NewIntegrationRepository(db)
+	noteIntegrationRepo := repository.NewNoteIntegrationRepository(db)
+
+	// Initialize sync service
+	syncService := sync.NewSyncService(noteIntegrationRepo, integrationRepo, noteRepo)
 
 	// Initialize use cases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	appUsecase := usecase.NewAppUsecase(appRepo)
-	noteUsecase := usecase.NewNoteUsecase(noteRepo, userRepo)
+	noteUsecase := usecase.NewNoteUsecase(noteRepo, userRepo, syncService)
+	integrationUsecase := usecase.NewIntegrationUsecase(integrationRepo, appRepo, userRepo)
 	healthUsecase := usecase.NewHealthUseCase()
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	appHandler := handler.NewAppHandler(appUsecase)
 	noteHandler := handler.NewNoteHandler(noteUsecase)
+	integrationHandler := handler.NewIntegrationHandler(integrationUsecase)
 	healthHandler := handler.NewHealthHandler(healthUsecase)
 
 	// Setup routes
@@ -73,13 +81,15 @@ func main() {
 	usersAPIService := userHandler
 	appsAPIService := appHandler
 	notesAPIService := noteHandler
+	integrationsAPIService := integrationHandler
 
 	healthAPIRouter := api.NewHealthAPIController(healthAPIService)
 	usersAPIRouter := api.NewUsersAPIController(usersAPIService)
 	appsAPIRouter := api.NewAppsAPIController(appsAPIService)
 	notesAPIRouter := api.NewNotesAPIController(notesAPIService)
+	integrationsAPIRouter := api.NewIntegrationsAPIController(integrationsAPIService)
 
-	router := api.NewRouter(healthAPIRouter, usersAPIRouter, appsAPIRouter, notesAPIRouter)
+	router := api.NewRouter(healthAPIRouter, usersAPIRouter, appsAPIRouter, notesAPIRouter, integrationsAPIRouter)
 
 	// Apply middleware
 	router.Use(middleware.LoggingMiddleware)

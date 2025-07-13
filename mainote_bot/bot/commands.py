@@ -91,6 +91,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🎯 **Commands:**\n"
             "• /start - Show welcome message and set up account\n"
             "• /help - Show this help message\n"
+            "• /integrations - Set up integrations with external apps\n"
             "• /reset - Reset setup process if you get stuck\n\n"
             "That's it! Keep it simple and start taking notes! 📚"
         )
@@ -109,6 +110,131 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id,
             text="Sorry, something went wrong. Please try again later."
         )
+
+
+async def integrations_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /integrations command to set up integrations."""
+    try:
+        chat_id = str(update.effective_chat.id)
+        user_name = update.effective_user.first_name or "there"
+        
+        # Initialize API client
+        api_client = MainoteAPIClient()
+        
+        # Check if user exists
+        try:
+            existing_user = await api_client.get_user_by_chat_id(chat_id)
+            if not existing_user:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="❌ You need to complete setup first. Please use /start to create your account."
+                )
+                return
+        except Exception as e:
+            logger.error(f"Error checking user for integrations: {str(e)}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, I'm having trouble connecting to the server. Please try again later."
+            )
+            return
+        
+        # Start the integration setup flow
+        await start_integration_setup(update, context, api_client)
+        
+    except Exception as e:
+        logger.error(f"Error in integrations command: {str(e)}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Sorry, something went wrong. Please try again later."
+        )
+
+
+async def start_integration_setup(update: Update, context: ContextTypes.DEFAULT_TYPE, api_client: MainoteAPIClient):
+    """Start the integration setup flow."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    
+    chat_id = str(update.effective_chat.id)
+    user_name = update.effective_user.first_name or "there"
+    
+    # Check existing integrations
+    try:
+        existing_integrations = await api_client.get_integrations(chat_id)
+        integration_count = len(existing_integrations.get('integrations', []))
+    except Exception as e:
+        logger.error(f"Error getting existing integrations: {str(e)}")
+        integration_count = 0
+    
+    # Create intro message
+    intro_message = (
+        f"🔗 **Integration Setup**\n\n"
+        f"Hey {user_name}! Let's set up integrations to sync your notes with external apps.\n\n"
+        f"**Why integrate?**\n"
+        f"• Sync tasks to your favorite productivity apps\n"
+        f"• Keep everything organized in one place\n"
+        f"• Never lose important notes again\n\n"
+    )
+    
+    if integration_count > 0:
+        intro_message += f"You currently have {integration_count} integration(s) configured.\n\n"
+    
+    intro_message += "Would you like to:"
+    
+    # Create keyboard buttons
+    keyboard = [
+        [InlineKeyboardButton("📱 Add New Integration", callback_data="integration_add_new")],
+    ]
+    
+    if integration_count > 0:
+        keyboard.append([InlineKeyboardButton("⚙️ Manage Existing", callback_data="integration_manage")])
+    
+    keyboard.append([InlineKeyboardButton("❌ Skip", callback_data="integration_skip")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=intro_message,
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+    
+    logger.info(f"Started integration setup for user {chat_id}")
+
+
+async def suggest_integrations_setup(update: Update, context: ContextTypes.DEFAULT_TYPE, api_client: MainoteAPIClient):
+    """Suggest setting up integrations after successful account creation."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    
+    chat_id = str(update.effective_chat.id)
+    user_name = update.effective_user.first_name or "there"
+    
+    # Create suggestion message
+    suggestion_message = (
+        f"🔗 **Want to sync your notes to external apps?**\n\n"
+        f"Set up integrations to automatically sync your notes with apps like Notion, TickTick, or Jira.\n\n"
+        f"**Benefits:**\n"
+        f"• Keep all your notes in one place\n"
+        f"• Never lose important information\n"
+        f"• Work with your favorite productivity tools\n\n"
+        f"Would you like to set up integrations now?"
+    )
+    
+    # Create keyboard buttons
+    keyboard = [
+        [InlineKeyboardButton("✅ Yes, Set Up Integrations", callback_data="integration_setup_yes")],
+        [InlineKeyboardButton("⏭️ Skip for Now", callback_data="integration_setup_skip")]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=suggestion_message,
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+    
+    logger.info(f"Suggested integration setup for user {chat_id}")
 
 
 def is_valid_email(email: str) -> bool:
@@ -201,13 +327,17 @@ async def handle_setup_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                     "You can now start sending me notes! Just type any message and I'll save it for you.\n\n"
                     "Commands:\n"
                     "/start - Show welcome message\n"
-                    "/help - Get help and information"
+                    "/help - Get help and information\n"
+                    "/integrations - Set up integrations with external apps"
                 )
                 
                 await context.bot.send_message(
                     chat_id=chat_id,
                     text=success_message
                 )
+                
+                # Suggest setting up integrations
+                await suggest_integrations_setup(update, context, api_client)
                 
                 logger.info(f"Successfully set up user {email} for chat {chat_id} with auto-generated password")
                 return True
