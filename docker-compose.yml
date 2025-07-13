@@ -30,6 +30,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - ENVIRONMENT=development
       - SENTRY_DSN=${SENTRY_DSN:-}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - MAINOTE_BOT_URL=http://mainote-bot:${BOT_PORT}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/health"]
       interval: 30s
@@ -81,6 +83,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - MAINOTE_SERVER_URL=http://mainote-server:${APP_PORT}
       - PYTHONUNBUFFERED=1
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

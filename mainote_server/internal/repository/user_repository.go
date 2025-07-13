@@ -19,6 +19,8 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	FindByChatID(ctx context.Context, chatID string) (*domain.UserWithSettings, error)
+	FindSettingsByUserID(ctx context.Context, userID uuid.UUID) (*domain.UserSettings, error)
+	FindUsersWithMorningNotifications(ctx context.Context) ([]domain.UserWithSettings, error)
 	UpdateChatID(ctx context.Context, userID uuid.UUID, chatID string) error
 	CreateUserSettings(ctx context.Context, userID uuid.UUID, chatID string, morningNotificationTime, timezone *string) (*domain.UserSettings, error)
 	UpdateUserSettings(ctx context.Context, update *domain.UserSettings) (*domain.UserSettings, error)
@@ -92,6 +94,59 @@ func (r *userRepository) FindByChatID(ctx context.Context, chatID string) (*doma
 	}, nil
 }
 
+func (r *userRepository) FindSettingsByUserID(ctx context.Context, userID uuid.UUID) (*domain.UserSettings, error) {
+	var settings domain.UserSettings
+	query := `SELECT user_settings_id, user_id, chat_id, morning_notification_time, timezone, created_at, updated_at, deleted_at FROM user_settings WHERE user_id = $1 AND deleted_at IS NULL`
+	err := r.db.GetContext(ctx, &settings, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &settings, nil
+}
+
+func (r *userRepository) FindUsersWithMorningNotifications(ctx context.Context) ([]domain.UserWithSettings, error) {
+	query := `
+		SELECT 
+			u.id, u.email, u.password, u.created_at, u.updated_at, u.deleted_at,
+			us.user_settings_id, us.user_id, us.chat_id, us.morning_notification_time, us.timezone, 
+			us.created_at, us.updated_at, us.deleted_at
+		FROM users u 
+		INNER JOIN user_settings us ON u.id = us.user_id 
+		WHERE us.morning_notification_time IS NOT NULL AND u.deleted_at IS NULL AND us.deleted_at IS NULL`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usersWithSettings []domain.UserWithSettings
+	for rows.Next() {
+		var user domain.User
+		var settings domain.UserSettings
+
+		err = rows.Scan(
+			&user.ID, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
+			&settings.UserSettingsID, &settings.UserID, &settings.ChatID, &settings.MorningNotificationTime, &settings.Timezone,
+			&settings.CreatedAt, &settings.UpdatedAt, &settings.DeletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		usersWithSettings = append(usersWithSettings, domain.UserWithSettings{
+			User:     user,
+			Settings: settings,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return usersWithSettings, nil
+}
+
 func (r *userRepository) UpdateChatID(ctx context.Context, userID uuid.UUID, chatID string) error {
 	query := `UPDATE user_settings SET chat_id = $1, updated_at = $2 WHERE user_id = $3`
 	_, err := r.db.ExecContext(ctx, query, chatID, time.Now(), userID)
@@ -158,10 +213,10 @@ func (r *userRepository) CreateUserSettings(ctx context.Context, userID uuid.UUI
 		INSERT INTO user_settings (user_id, chat_id, morning_notification_time, timezone, created_at, updated_at) 
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING user_settings_id, user_id, chat_id, morning_notification_time, timezone, created_at, updated_at, deleted_at`
-	
+
 	now := time.Now()
 	var settings domain.UserSettings
-	
+
 	err := r.db.QueryRowContext(ctx, query, userID, chatID, morningNotificationTime, timezone, now, now).Scan(
 		&settings.UserSettingsID,
 		&settings.UserID,

@@ -16,6 +16,9 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 # Webhook Configuration
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
+# Internal API Configuration
+INTERNAL_API_KEY = os.getenv('INTERNAL_API_KEY')
+
 # Sentry DSN Configuration
 SENTRY_DSN = os.getenv('SENTRY_DSN')
 

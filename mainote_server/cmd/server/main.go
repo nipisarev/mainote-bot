@@ -12,6 +12,7 @@ import (
 	"mainote-server/internal/config"
 	"mainote-server/internal/delivery/http/handler"
 	"mainote-server/internal/delivery/http/middleware"
+	"mainote-server/internal/notifications"
 	"mainote-server/internal/repository"
 	"mainote-server/internal/sync"
 	"mainote-server/internal/usecase"
@@ -58,9 +59,21 @@ func main() {
 	noteRepo := repository.NewNoteRepository(db)
 	integrationRepo := repository.NewIntegrationRepository(db)
 	noteIntegrationRepo := repository.NewNoteIntegrationRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Initialize sync service
 	syncService := sync.NewSyncService(noteIntegrationRepo, integrationRepo, noteRepo)
+
+	// Initialize notification scheduler
+	scheduler := notifications.NewScheduler(notificationRepo, userRepo, noteRepo)
+
+	// Start notification scheduler in background
+	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
+	go func() {
+		log.Println("Starting notification scheduler")
+		scheduler.StartWorker(schedulerCtx)
+		log.Println("Notification scheduler stopped")
+	}()
 
 	// Initialize use cases
 	userUsecase := usecase.NewUserUsecase(userRepo)
@@ -113,6 +126,11 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
+
+	log.Println("Received shutdown signal")
+
+	// Stop notification scheduler first
+	schedulerCancel()
 
 	// Create a deadline to wait for.
 	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)

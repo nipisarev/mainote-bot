@@ -2,9 +2,19 @@ import asyncio
 import os
 import httpx
 from datetime import datetime
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Header
 from telegram import Update
 from mainote_bot.utils.logging import logger
+from mainote_bot.config import INTERNAL_API_KEY
+from pydantic import BaseModel
+from typing import Optional
+
+# Add Pydantic model for notification request
+class NotificationRequest(BaseModel):
+    chat_id: str
+    type: str  # morning_notification/ai_summary/reminder
+    message: str
+    id: str  # UUID for logging
 
 router = APIRouter()
 
@@ -33,6 +43,55 @@ async def webhook(request: Request):
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/notification")
+async def notification(
+    request: Request, 
+    notification_data: NotificationRequest,
+    x_internal_api_key: str = Header(None, alias="X-Internal-API-Key")
+):
+    """Handle internal notification requests from mainote_server."""
+    try:
+        # Check internal API key for authorization
+        if x_internal_api_key != INTERNAL_API_KEY:
+            logger.warning(f"Unauthorized notification request - Invalid API key from {request.client.host}")
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid internal API key")
+        
+        # Get the bot from the app state
+        bot = request.app.state.bot
+        
+        if not bot:
+            raise HTTPException(status_code=500, detail="Bot not initialized")
+        
+        # Extract notification data
+        chat_id = notification_data.chat_id
+        notification_type = notification_data.type
+        message = notification_data.message
+        notification_id = notification_data.id
+        
+        # Log the notification request
+        logger.info(f"Received notification request - ID: {notification_id}, Type: {notification_type}, Chat: {chat_id}")
+        
+        # Send message to the user
+        await bot.send_message(
+            chat_id=chat_id,
+            text=message,
+            parse_mode=None  # Send as plain text to avoid formatting issues
+        )
+        
+        logger.info(f"Successfully sent notification {notification_id} to chat {chat_id}")
+        
+        return {
+            "status": "success",
+            "message": "Notification sent successfully",
+            "notification_id": notification_id,
+            "chat_id": chat_id,
+            "type": notification_type
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing notification {notification_data.id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
 
 @router.get("/health")
 async def health(request: Request):
