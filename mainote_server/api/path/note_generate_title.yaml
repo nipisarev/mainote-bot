@@ -1,0 +1,45 @@
+post:
+  tags:
+    - Notes
+  summary: Generate AI title for a note
+  description: Generates an AI-powered title for an existing note based on its content.
+  operationId: generateNoteTitle
+  parameters:
+    - name: note_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Note ID
+    - name: chat_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Telegram chat ID for user authorization
+  responses:
+    "200":
+      description: Title generated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/responses/note_response.yaml"
+    "400":
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "404":
+      description: Note not found
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
+    "500":
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../schema/components/error_response.yaml"
