@@ -28,7 +28,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "I'm ready to help you save your notes! Simply send me any text message and I'll save it for you.\n\n"
                     "Commands:\n"
                     "/start - Show this welcome message\n"
-                    "/help - Get help and information"
+                    "/help - Get help and information\n"
+                    "/show_notes - Display all your notes with interactive buttons"
                 )
                 
                 await context.bot.send_message(
@@ -91,6 +92,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🎯 **Commands:**\n"
             "• /start - Show welcome message and set up account\n"
             "• /help - Show this help message\n"
+            "• /show_notes - Display all your notes with interactive buttons\n"
             "• /integrations - Set up integrations with external apps\n"
             "• /reset - Reset setup process if you get stuck\n\n"
             "That's it! Keep it simple and start taking notes! 📚"
@@ -143,6 +145,159 @@ async def integrations_command(update: Update, context: ContextTypes.DEFAULT_TYP
         
     except Exception as e:
         logger.error(f"Error in integrations command: {str(e)}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Sorry, something went wrong. Please try again later."
+        )
+
+
+async def show_notes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /show_notes command to display all notes with interactive buttons."""
+    try:
+        chat_id = str(update.effective_chat.id)
+        user_name = update.effective_user.first_name or "there"
+        
+        # Initialize API client
+        api_client = MainoteAPIClient()
+        
+        # Check if user exists
+        try:
+            existing_user = await api_client.get_user_by_chat_id(chat_id)
+            if not existing_user:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="❌ You need to complete setup first. Please use /start to create your account."
+                )
+                return
+        except Exception as e:
+            logger.error(f"Error checking user for show_notes: {str(e)}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, I'm having trouble connecting to the server. Please try again later."
+            )
+            return
+        
+        # Get all notes for the user
+        try:
+            notes_data = await api_client.get_notes(chat_id, status="active", limit=100)
+            notes = notes_data.get('notes', [])
+            
+            if not notes:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="📝 **Your Notes**\n\nYou don't have any notes yet. Start by sending me a message to create your first note!",
+                    parse_mode='Markdown'
+                )
+                return
+                
+        except Exception as e:
+            logger.error(f"Error getting notes for show_notes: {str(e)}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, I'm having trouble getting your notes. Please try again later."
+            )
+            return
+        
+        # Group notes by category
+        from collections import defaultdict
+        notes_by_category = defaultdict(list)
+        
+        for note in notes:
+            category = note.get('category', 'general')
+            notes_by_category[category].append(note)
+        
+        # Create message with categories and summary
+        category_emojis = {
+            'task': '✅',
+            'idea': '💡',
+            'personal': '🏖',
+            'work': '💼',
+            'general': '📄'
+        }
+        
+        message_parts = [f"📝 **Your Notes** ({len(notes)} total)\n"]
+        
+        # Add category breakdown
+        for category, category_notes in notes_by_category.items():
+            emoji = category_emojis.get(category, '📄')
+            message_parts.append(f"{emoji} **{category.title()}**: {len(category_notes)} notes")
+        
+        # Add numbered list of notes with titles/previews
+        message_parts.append("\n**📋 Your Notes:**")
+        
+        for i, note in enumerate(notes, 1):
+            title = note.get('title', 'Untitled')
+            content = note.get('content', '')
+            category = note.get('category', 'general')
+            
+            # Truncate title if too long
+            if len(title) > 30:
+                title = title[:27] + "..."
+            
+            # Create content preview
+            content_preview = ""
+            if content and content.strip():
+                # Remove title from content if it's the same
+                if content.strip() != title:
+                    preview_text = content.strip()
+                    if len(preview_text) > 30:
+                        preview_text = preview_text[:27] + "..."
+                    content_preview = f" - {preview_text}"
+            
+            # Get category emoji
+            emoji = category_emojis.get(category, '📄')
+            
+            # Extras: due_at, effort_min, priority
+            extras = []
+            due_at = note.get('due_at')
+            if due_at:
+                # expect RFC3339; show date portion
+                try:
+                    extras.append(f"⏰ {str(due_at)[:10]}")
+                except Exception:
+                    extras.append(f"⏰ {due_at}")
+            effort_min = note.get('effort_min')
+            if isinstance(effort_min, int) and effort_min > 0:
+                extras.append(f"⏳ {effort_min}m")
+            priority = note.get('priority')
+            if isinstance(priority, int) and priority != 0:
+                extras.append(f"⭐ {priority}")
+
+            extras_str = f" ({' • '.join(extras)})" if extras else ""
+
+            # Format: "1. Title - Content preview (Category) (extras)"
+            message_parts.append(f"{i}. **{title}**{content_preview} ({emoji} {category.title()}){extras_str}")
+        
+        message_parts.append("\n📱 **Tap a number to view that note:**")
+        
+        # Create notes map for buttons (similar to morning notifications)
+        notes_map = {}
+        for i, note in enumerate(notes, 1):
+            notes_map[i] = note.get('note_id')
+        
+        # Create keyboard with number buttons
+        from mainote_bot.webhook.routes import create_notes_buttons
+        keyboard = create_notes_buttons(notes_map)
+        
+        message_text = "\n".join(message_parts)
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=message_text,
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+        
+        # Store notes map for button callbacks (similar to morning notifications)
+        bot = context.bot
+        if not hasattr(bot, '_notes_storage'):
+            bot._notes_storage = {}
+        bot._notes_storage[chat_id] = notes_map
+        
+        logger.info(f"Successfully sent show_notes command to user {chat_id} with {len(notes)} notes")
+        
+    except Exception as e:
+        logger.error(f"Error in show_notes command: {str(e)}", exc_info=True)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text="Sorry, something went wrong. Please try again later."

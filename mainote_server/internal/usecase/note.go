@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,11 +25,12 @@ type NoteUsecase interface {
 }
 
 // NewNoteUsecase creates a new instance of NoteUsecase.
-func NewNoteUsecase(noteRepo repository.NoteRepository, userRepo repository.UserRepository, syncService domain.SyncService) NoteUsecase {
+func NewNoteUsecase(noteRepo repository.NoteRepository, userRepo repository.UserRepository, syncService domain.SyncService, aiUsecase domain.AIUsecase) NoteUsecase {
 	return &noteUsecase{
 		noteRepo:    noteRepo,
 		userRepo:    userRepo,
 		syncService: syncService,
+		aiUsecase:   aiUsecase,
 	}
 }
 
@@ -36,6 +38,7 @@ type noteUsecase struct {
 	noteRepo    repository.NoteRepository
 	userRepo    repository.UserRepository
 	syncService domain.SyncService
+	aiUsecase   domain.AIUsecase
 }
 
 // CreateNote creates a new note for a user.
@@ -82,6 +85,9 @@ func (uc *noteUsecase) CreateNote(ctx context.Context, chatID, title, content, c
 		Source:        source,
 		VoiceFileID:   voiceFileID,
 		Transcription: transcription,
+		DueAt:         nil,
+		EffortMin:     30,
+		Priority:      0,
 		Metadata:      metadataJSON,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
@@ -105,14 +111,51 @@ func (uc *noteUsecase) CreateNote(ctx context.Context, chatID, title, content, c
 		}
 	}()
 
+	// Asynchronously generate AI title if not provided and AI usecase is available
+	if uc.aiUsecase != nil {
+		log.Printf("Starting AI title generation for note %s (no title provided)", note.NoteID)
+		go func() {
+			// Create a new context for the AI operation to avoid cancellation issues
+			aiCtx := context.Background()
+
+			log.Printf("Generating AI title for note %s with content: %s", note.NoteID, note.Content)
+			// Generate title using AI
+			generatedTitle, err := uc.aiUsecase.GenerateNoteTitle(aiCtx, note)
+			if err != nil {
+				if strings.Contains(err.Error(), "quota") {
+					log.Printf("OpenAI quota exceeded for note %s - please check billing", note.NoteID)
+				} else {
+					log.Printf("Failed to generate AI title for note %s: %v", note.NoteID, err)
+				}
+				return
+			}
+
+			if generatedTitle != "" {
+				log.Printf("AI generated title for note %s: '%s'", note.NoteID, generatedTitle)
+				// Update the note with the generated title
+				_, err := uc.UpdateNote(aiCtx, note.NoteID, note.ChatID, &generatedTitle, nil, nil, nil, nil, nil, nil)
+				if err != nil {
+					log.Printf("Failed to update note %s with AI-generated title: %v", note.NoteID, err)
+				} else {
+					log.Printf("Successfully generated and updated AI title for note %s: %s", note.NoteID, generatedTitle)
+				}
+			}
+		}()
+	} else if uc.aiUsecase == nil {
+		log.Printf("AI usecase is nil for note %s, skipping AI title generation", note.NoteID)
+	}
+
 	return note, nil
 }
 
 // GetNoteByID retrieves a specific note for a user.
 func (uc *noteUsecase) GetNoteByID(ctx context.Context, noteID uuid.UUID, chatID string) (*domain.Note, error) {
+	log.Printf("GetNoteByID called with noteID: %s, chatID: %s", noteID.String(), chatID)
+
 	// Ensure user exists first
 	_, err := uc.userRepo.FindByChatID(ctx, chatID)
 	if err != nil {
+		log.Printf("User lookup failed for chatID %s: %v", chatID, err)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found for chat_id: %s", chatID)
 		}
@@ -121,11 +164,13 @@ func (uc *noteUsecase) GetNoteByID(ctx context.Context, noteID uuid.UUID, chatID
 
 	note, err := uc.noteRepo.GetByIDForUser(ctx, noteID, chatID)
 	if err != nil {
+		log.Printf("Note lookup failed for noteID %s, chatID %s: %v", noteID.String(), chatID, err)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("note not found")
 		}
 		return nil, fmt.Errorf("failed to get note: %w", err)
 	}
+	log.Printf("Successfully found note: %s", note.NoteID.String())
 
 	return note, nil
 }
@@ -217,6 +262,23 @@ func (uc *noteUsecase) UpdateNote(ctx context.Context, noteID uuid.UUID, chatID 
 			return nil, fmt.Errorf("invalid metadata format: %w", err)
 		}
 		updatedNote.Metadata = (*json.RawMessage)(&metadataBytes)
+	}
+
+	// Check for optional extended fields in metadata payload and map if present
+	if metadata != nil {
+		if m, ok := metadata.(map[string]interface{}); ok {
+			if v, ok := m["due_at"].(string); ok && v != "" {
+				if ts, err := time.Parse(time.RFC3339, v); err == nil {
+					updatedNote.DueAt = &ts
+				}
+			}
+			if v, ok := m["effort_min"].(float64); ok {
+				updatedNote.EffortMin = int(v)
+			}
+			if v, ok := m["priority"].(float64); ok {
+				updatedNote.Priority = int(v)
+			}
+		}
 	}
 
 	if err := uc.noteRepo.UpdateForUser(ctx, noteID, chatID, &updatedNote); err != nil {

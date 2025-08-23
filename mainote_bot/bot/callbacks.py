@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from mainote_bot.utils.logging import logger
 from mainote_bot.api.client import MainoteAPIClient
@@ -6,6 +6,74 @@ from mainote_bot.bot.messages import escape_markdown_v1
 
 # Constants
 UNKNOWN_APP = 'Unknown App'
+NOTES_PER_PAGE = 10
+
+def create_note_action_buttons(note_id: str, note_num: int, total_notes: int) -> InlineKeyboardMarkup:
+    """Create action buttons for a specific note."""
+    buttons = []
+    
+    # First row: Done, Delete
+    buttons.append([
+        InlineKeyboardButton("✅ Done", callback_data=f"note_action_done_{note_id}_{note_num}"),
+        InlineKeyboardButton("🗑️ Delete", callback_data=f"note_action_delete_{note_id}_{note_num}")
+    ])
+    
+    # Second row: Close, Next (if not last note)
+    second_row = [InlineKeyboardButton("❌ Close", callback_data="notes_close")]
+    if note_num < total_notes:
+        second_row.append(InlineKeyboardButton("➡️ Next", callback_data=f"note_action_next_{note_id}_{note_num}"))
+    
+    buttons.append(second_row)
+    
+    return InlineKeyboardMarkup(buttons)
+
+def create_notes_buttons_from_storage(notes_map: dict, page: int = 0) -> InlineKeyboardMarkup:
+    """Create inline keyboard buttons for note browsing with pagination."""
+    if not notes_map:
+        return InlineKeyboardMarkup([])
+    
+    buttons = []
+    note_numbers = sorted(notes_map.keys())
+    
+    # Calculate pagination
+    start_idx = page * NOTES_PER_PAGE
+    end_idx = min(start_idx + NOTES_PER_PAGE, len(note_numbers))
+    
+    # Create number buttons in rows of 5
+    current_row = []
+    for i in range(start_idx, end_idx):
+        note_num = note_numbers[i]
+        current_row.append(InlineKeyboardButton(
+            str(note_num), 
+            callback_data=f"note_browse_{note_num}_{notes_map[note_num]}"
+        ))
+        
+        # Add row every 5 buttons
+        if len(current_row) == 5:
+            buttons.append(current_row)
+            current_row = []
+    
+    # Add remaining buttons
+    if current_row:
+        buttons.append(current_row)
+    
+    # Add navigation buttons
+    nav_buttons = []
+    total_pages = (len(note_numbers) + NOTES_PER_PAGE - 1) // NOTES_PER_PAGE
+    
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"notes_page_{page-1}"))
+    
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("➡️ Next", callback_data=f"notes_page_{page+1}"))
+    
+    if nav_buttons:
+        buttons.append(nav_buttons)
+    
+    # Add close button
+    buttons.append([InlineKeyboardButton("❌ Close", callback_data="notes_close")])
+    
+    return InlineKeyboardMarkup(buttons)
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button callbacks."""
@@ -19,7 +87,72 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         logger.info(f"Button callback from user {chat_id}: {callback_data}")
         
-        # Handle note category selection
+        # Handle note browsing callbacks
+        if callback_data.startswith("note_browse_"):
+            await handle_note_browse(update, context, callback_data)
+            return
+        
+        # Handle note action callbacks
+        if callback_data.startswith("note_action_"):
+            await handle_note_action(update, context, callback_data)
+            return
+        
+        # Handle notes pagination
+        if callback_data.startswith("notes_page_"):
+            await handle_notes_page(update, context, callback_data)
+            return
+        
+        # Handle notes close
+        if callback_data == "notes_close":
+            await query.edit_message_text(
+                text="👋 Note browsing closed. Have a great day!"
+            )
+            return
+
+        # Task follow-up: due date set/skip
+        if callback_data in ("task_due_set", "task_due_skip"):
+            note_id = context.user_data.get('last_created_note_id')
+            if not note_id:
+                await query.edit_message_text(text="Session expired. Send a new task.")
+                return
+            if callback_data == "task_due_set":
+                await query.edit_message_text(text="📅 Send due date in format dd.mm.yyyy hh:mm (UTC)")
+            else:
+                # Skip due date, go to effort
+                await _prompt_effort_buttons(query, context, user_name)
+            return
+
+        # Task follow-up: effort
+        if callback_data.startswith("task_effort_"):
+            note_id = context.user_data.get('last_created_note_id')
+            if not note_id:
+                await query.edit_message_text(text="Session expired. Send a new task.")
+                return
+            minutes = int(callback_data.split("_")[-1])
+            try:
+                api = MainoteAPIClient()
+                await api.update_note(note_id, chat_id, metadata={"effort_min": minutes})
+                await _prompt_priority_buttons(query, context, user_name)
+            except Exception as e:
+                await query.edit_message_text(text=f"❌ Failed to set effort: {e}")
+            return
+
+        # Task follow-up: priority
+        if callback_data.startswith("task_priority_"):
+            note_id = context.user_data.get('last_created_note_id')
+            if not note_id:
+                await query.edit_message_text(text="Session expired. Send a new task.")
+                return
+            value = int(callback_data.split("_")[-1])
+            try:
+                api = MainoteAPIClient()
+                await api.update_note(note_id, chat_id, metadata={"priority": value})
+                await _finish_task_enrichment(query, context)
+            except Exception as e:
+                await query.edit_message_text(text=f"❌ Failed to set priority: {e}")
+            return
+        
+    # Handle note category selection
         if callback_data.startswith("note_category_"):
             category = callback_data.replace("note_category_", "")
             
@@ -58,24 +191,42 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Clear the pending note from context
                 context.user_data.pop('pending_note', None)
                 
-                # Send success message
-                # Escape the user's content to prevent markdown parsing errors
-                escaped_content = escape_markdown_v1(pending_note['content'][:200])
-                truncated_suffix = '...' if len(pending_note['content']) > 200 else ''
-                
-                success_message = (
-                    f"✅ Note saved successfully, {user_name}!\n\n"
-                    f"**Category:** {category_display.get(category, category.title())}\n"
-                    f"**Content:** \"{escaped_content}{truncated_suffix}\"\n\n"
-                    f"📝 Your note has been saved and can be accessed in your Notion database."
-                )
-                
-                await query.edit_message_text(
-                    text=success_message,
-                    parse_mode='Markdown'
-                )
-                
-                logger.info(f"Successfully saved note for user {chat_id} with category {category}")
+                # If it's a task, start follow-up flow for due date / effort / priority
+                if category == "task" and note_id:
+                    context.user_data['last_created_note_id'] = note_id
+                    # Ask about due date
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("📅 Set date", callback_data="task_due_set"),
+                            InlineKeyboardButton("❌ No", callback_data="task_due_skip")
+                        ]
+                    ]
+                    escaped_content = escape_markdown_v1(pending_note['content'][:200])
+                    truncated_suffix = '...' if len(pending_note['content']) > 200 else ''
+                    await query.edit_message_text(
+                        text=(
+                            f"✅ Task saved, {user_name}!\n\n"
+                            f"**Content:** \"{escaped_content}{truncated_suffix}\"\n\n"
+                            f"Do you want to set a due date?"
+                        ),
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='Markdown'
+                    )
+                else:
+                    # Send success message for non-task
+                    escaped_content = escape_markdown_v1(pending_note['content'][:200])
+                    truncated_suffix = '...' if len(pending_note['content']) > 200 else ''
+                    success_message = (
+                        f"✅ Note saved successfully, {user_name}!\n\n"
+                        f"**Category:** {category_display.get(category, category.title())}\n"
+                        f"**Content:** \"{escaped_content}{truncated_suffix}\"\n\n"
+                        f"📝 Your note has been saved and can be accessed in your Notion database."
+                    )
+                    await query.edit_message_text(
+                        text=success_message,
+                        parse_mode='Markdown'
+                    )
+                    logger.info(f"Successfully saved note for user {chat_id} with category {category}")
                 
             except Exception as e:
                 error_message = str(e)
@@ -116,6 +267,295 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
         except:
             pass  # Message might be too old to edit
+
+async def _prompt_effort_buttons(query, context, user_name: str):
+    buttons = [
+        [
+            InlineKeyboardButton("XS • 15m", callback_data="task_effort_15"),
+            InlineKeyboardButton("S • 30m", callback_data="task_effort_30"),
+            InlineKeyboardButton("M • 2h", callback_data="task_effort_120"),
+        ],
+        [
+            InlineKeyboardButton("L • 8h", callback_data="task_effort_480"),
+            InlineKeyboardButton("XL • 2d", callback_data="task_effort_2880"),
+        ]
+    ]
+    await query.edit_message_text(
+        text=f"⏱️ Select estimated effort, {user_name}:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+async def _prompt_priority_buttons(query, context, user_name: str):
+    buttons = [
+        [
+            InlineKeyboardButton("⬇️ Lowest", callback_data="task_priority_10"),
+            InlineKeyboardButton("↓ Low", callback_data="task_priority_20"),
+        ],
+        [
+            InlineKeyboardButton("• Normal", callback_data="task_priority_0"),
+            InlineKeyboardButton("↑ High", callback_data="task_priority_30"),
+            InlineKeyboardButton("⬆️ Highest", callback_data="task_priority_40"),
+        ]
+    ]
+    await query.edit_message_text(
+        text=f"🎯 Set priority?",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+async def _finish_task_enrichment(query, context):
+    context.user_data.pop('last_created_note_id', None)
+    await query.edit_message_text(text="✅ Task details updated.")
+
+async def _parse_ddmmyyyy_hhmm(s: str) -> str | None:
+    import re, datetime
+    m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})$", s)
+    if not m:
+        return None
+    dd, mm, yyyy, hh, mi = map(int, m.groups())
+    try:
+        dt = datetime.datetime(yyyy, mm, dd, hh, mi, tzinfo=datetime.timezone.utc)
+        return dt.isoformat()
+    except Exception:
+        return None
+
+async def handle_task_followups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Entry from messages.handle_message to capture date input when needed."""
+    if 'last_created_note_id' not in context.user_data:
+        return False
+    if not update.message or not update.message.text:
+        return False
+
+    chat_id = str(update.effective_chat.id)
+    text = update.message.text.strip()
+    note_id = context.user_data.get('last_created_note_id')
+    api = MainoteAPIClient()
+
+    # Expecting dd.mm.yyyy hh:mm format
+    iso = await _parse_ddmmyyyy_hhmm(text)
+    if not iso:
+        await context.bot.send_message(chat_id=chat_id, text="❌ Invalid format. Use dd.mm.yyyy hh:mm")
+        return True
+
+    try:
+        await api.update_note(note_id, chat_id, metadata={"due_at": iso})
+        # After due date set, prompt effort
+        await context.bot.send_message(chat_id=chat_id, text="📅 Due date set.")
+        # Prompt effort via a fresh message with buttons
+        keyboard = [
+            [
+                InlineKeyboardButton("XS • 15m", callback_data="task_effort_15"),
+                InlineKeyboardButton("S • 30m", callback_data="task_effort_30"),
+                InlineKeyboardButton("M • 2h", callback_data="task_effort_120"),
+            ],
+            [
+                InlineKeyboardButton("L • 8h", callback_data="task_effort_480"),
+                InlineKeyboardButton("XL • 2d", callback_data="task_effort_2880"),
+            ]
+        ]
+        await context.bot.send_message(chat_id=chat_id, text="⏱️ Select estimated effort:", reply_markup=InlineKeyboardMarkup(keyboard))
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to set due date: {e}")
+    return True
+
+
+async def handle_note_browse(update: Update, context: ContextTypes.DEFAULT_TYPE, callback_data: str):
+    """Handle note browsing callback."""
+    try:
+        query = update.callback_query
+        chat_id = str(query.message.chat_id)
+        
+        # Parse callback data: note_browse_{note_num}_{note_id}
+        parts = callback_data.split("_", 3)
+        if len(parts) < 4:
+            logger.error(f"Invalid note browse callback data: {callback_data}")
+            return
+        
+        note_num = int(parts[2])
+        note_id = parts[3]
+        
+        logger.info(f"User {chat_id} browsing note {note_num} (ID: {note_id})")
+        
+        # Get note details from API
+        api_client = MainoteAPIClient()
+        note_data = await api_client.get_note_by_id(note_id, chat_id)
+        
+        # Get notes map from bot storage to determine total notes
+        bot = context.bot
+        notes_map = getattr(bot, '_notes_storage', {}).get(chat_id, {})
+        total_notes = len(notes_map)
+        
+        # Format note display
+        title = note_data.get('title', 'Untitled')
+        content = note_data.get('content', '')
+        category = note_data.get('category', 'general')
+        status = note_data.get('status', 'active')
+        
+        # Truncate content if too long
+        if len(content) > 500:
+            content = content[:500] + "..."
+        
+        category_emojis = {
+            'task': '✅',
+            'idea': '💡',
+            'personal': '🏖',
+            'work': '💼',
+            'general': '📄'
+        }
+        
+        emoji = category_emojis.get(category, '📄')
+        
+        message_text = (
+            f"📝 **Note {note_num}**\n\n"
+            f"{emoji} **{title}**\n"
+            f"Category: {category.title()}\n"
+            f"Status: {status.title()}\n\n"
+            f"**Content:**\n{content}"
+        )
+        # Append extras if present
+        extras = []
+        due_at = note_data.get('due_at')
+        if due_at:
+            extras.append(f"⏰ {str(due_at)[:10]}")
+        effort_min = note_data.get('effort_min')
+        if isinstance(effort_min, int) and effort_min > 0:
+            extras.append(f"⏳ {effort_min}m")
+        priority = note_data.get('priority')
+        if isinstance(priority, int) and priority != 0:
+            extras.append(f"⭐ {priority}")
+
+        if extras:
+            message_text = message_text + "\n\n" + " • ".join(extras)
+        
+        # Create action buttons
+        keyboard = create_note_action_buttons(note_id, note_num, total_notes)
+        
+        await query.edit_message_text(
+            text=message_text,
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in handle_note_browse: {str(e)}", exc_info=True)
+        await query.edit_message_text(
+            text="❌ Error loading note. Please try again later."
+        )
+
+async def handle_note_action(update: Update, context: ContextTypes.DEFAULT_TYPE, callback_data: str):
+    """Handle note action callbacks (Done, Delete, Next)."""
+    try:
+        query = update.callback_query
+        chat_id = str(query.message.chat_id)
+        
+        # Parse callback data: note_action_{action}_{note_id}_{note_num}
+        parts = callback_data.split("_", 4)
+        if len(parts) != 5:
+            logger.error(f"Invalid note action callback data: {callback_data}")
+            return
+        
+        action = parts[2]
+        note_id = parts[3]
+        note_num = int(parts[4])
+        
+        logger.info(f"User {chat_id} performing action {action} on note {note_id}")
+        
+        api_client = MainoteAPIClient()
+        
+        if action == "done":
+            # Mark note as completed
+            await api_client.update_note_status(note_id, "completed", chat_id)
+            await query.edit_message_text(
+                text=f"✅ Note {note_num} marked as completed!\n\n"
+                     f"Great job! The note has been marked as done."
+            )
+            
+        elif action == "delete":
+            # Delete the note
+            await api_client.delete_note(note_id, chat_id)
+            await query.edit_message_text(
+                text=f"🗑️ Note {note_num} deleted successfully!\n\n"
+                     f"The note has been permanently removed."
+            )
+            
+        elif action == "next":
+            # Show next note
+            bot = context.bot
+            notes_map = getattr(bot, '_notes_storage', {}).get(chat_id, {})
+            note_numbers = sorted(notes_map.keys())
+            
+            logger.info(f"Looking for next note after {note_num}. Available notes: {note_numbers}")
+            
+            # Find next note
+            try:
+                current_index = note_numbers.index(note_num)
+                if current_index < len(note_numbers) - 1:
+                    next_note_num = note_numbers[current_index + 1]
+                    next_note_id = notes_map[next_note_num]
+                    
+                    logger.info(f"Found next note: {next_note_num} -> {next_note_id}")
+                    
+                    # Simulate browsing the next note
+                    await handle_note_browse(update, context, f"note_browse_{next_note_num}_{next_note_id}")
+                    return
+                else:
+                    await query.edit_message_text(
+                        text="📝 You've reached the last note!\n\n"
+                             "Great job browsing through your notes!"
+                    )
+            except ValueError:
+                logger.error(f"Note {note_num} not found in notes_map keys: {note_numbers}")
+                await query.edit_message_text(
+                    text="❌ Error finding next note. Please try again."
+                )
+        
+    except Exception as e:
+        logger.error(f"Error in handle_note_action: {str(e)}", exc_info=True)
+        await query.edit_message_text(
+            text="❌ Error performing action. Please try again later."
+        )
+
+async def handle_notes_page(update: Update, context: ContextTypes.DEFAULT_TYPE, callback_data: str):
+    """Handle notes pagination."""
+    try:
+        query = update.callback_query
+        chat_id = str(query.message.chat_id)
+        
+        # Parse callback data: notes_page_{page_num}
+        parts = callback_data.split("_")
+        if len(parts) < 3:
+            logger.error(f"Invalid notes page callback data: {callback_data}")
+            return
+        
+        page = int(parts[2])
+        
+        # Get notes map from bot storage
+        bot = context.bot
+        notes_map = getattr(bot, '_notes_storage', {}).get(chat_id, {})
+        
+        if not notes_map:
+            await query.edit_message_text(
+                text="❌ No notes found. Please try again later."
+            )
+            return
+        
+        # Create new keyboard with the requested page
+        keyboard = create_notes_buttons_from_storage(notes_map, page)
+        
+        # Get original message text (before the "Tap a number" part)
+        original_text = query.message.text
+        if "\n\n📱 Tap a number to view that note:" in original_text:
+            original_text = original_text.split("\n\n📱 Tap a number to view that note:")[0]
+        
+        await query.edit_message_text(
+            text=f"{original_text}\n\n📱 Tap a number to view that note:",
+            reply_markup=keyboard
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in handle_notes_page: {str(e)}", exc_info=True)
+        await query.edit_message_text(
+            text="❌ Error loading page. Please try again later."
+        )
 
 
 async def handle_integration_callback(update: Update, context: ContextTypes.DEFAULT_TYPE, callback_data: str):

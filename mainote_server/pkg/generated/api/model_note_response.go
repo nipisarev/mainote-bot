@@ -49,6 +49,15 @@ type NoteResponse struct {
 	// Additional metadata as JSON
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
+	// Optional deadline (UTC)
+	DueAt *time.Time `json:"due_at,omitempty"`
+
+	// Estimated effort in minutes
+	EffortMin int32 `json:"effort_min,omitempty"`
+
+	// Naive integer priority; higher is more important
+	Priority int32 `json:"priority,omitempty"`
+
 	// Creation timestamp
 	CreatedAt time.Time `json:"created_at,omitempty"`
 

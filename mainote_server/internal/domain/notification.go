@@ -19,8 +19,9 @@ type ScheduledNotification struct {
 
 // NotificationPayload represents the payload sent to mainote_bot
 type NotificationPayload struct {
-	ChatID  string `json:"chat_id"`
-	Type    string `json:"type"`
-	Message string `json:"message"`
-	ID      string `json:"id"`
+	ChatID   string         `json:"chat_id"`
+	Type     string         `json:"type"`
+	Message  string         `json:"message"`
+	ID       string         `json:"id"`
+	NotesMap map[int]string `json:"notes_map,omitempty"`
 }

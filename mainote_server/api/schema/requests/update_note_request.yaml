@@ -25,6 +25,20 @@ properties:
     type: string
     description: Voice transcription text
     example: "This is updated transcribed voice message content"
+  due_at:
+    type: string
+    format: date-time
+    description: Optional deadline (UTC, RFC3339)
+    example: "2025-08-18T10:00:00Z"
+  effort_min:
+    type: integer
+    description: Estimated effort in minutes
+    minimum: 0
+    example: 480
+  priority:
+    type: integer
+    description: Naive integer priority; higher is more important
+    example: 30
   metadata:
     type: object
     description: Additional metadata as JSON

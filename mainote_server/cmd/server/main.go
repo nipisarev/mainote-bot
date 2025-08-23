@@ -9,9 +9,11 @@ import (
 	"syscall"
 	"time"
 
+	"mainote-server/internal/ai"
 	"mainote-server/internal/config"
 	"mainote-server/internal/delivery/http/handler"
 	"mainote-server/internal/delivery/http/middleware"
+	"mainote-server/internal/domain"
 	"mainote-server/internal/notifications"
 	"mainote-server/internal/repository"
 	"mainote-server/internal/sync"
@@ -64,6 +66,16 @@ func main() {
 	// Initialize sync service
 	syncService := sync.NewSyncService(noteIntegrationRepo, integrationRepo, noteRepo)
 
+	// Initialize AI service and usecase
+	var aiUsecase domain.AIUsecase
+	if cfg.OpenAIAPIKey != "" {
+		aiService := ai.NewOpenAIService(cfg.OpenAIAPIKey)
+		aiUsecase = usecase.NewAIUsecase(aiService)
+		log.Println("AI service initialized with OpenAI")
+	} else {
+		log.Println("OpenAI API key not provided - AI features disabled")
+	}
+
 	// Initialize notification scheduler
 	scheduler := notifications.NewScheduler(notificationRepo, userRepo, noteRepo)
 
@@ -78,7 +90,7 @@ func main() {
 	// Initialize use cases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	appUsecase := usecase.NewAppUsecase(appRepo)
-	noteUsecase := usecase.NewNoteUsecase(noteRepo, userRepo, syncService)
+	noteUsecase := usecase.NewNoteUsecase(noteRepo, userRepo, syncService, aiUsecase)
 	integrationUsecase := usecase.NewIntegrationUsecase(integrationRepo, appRepo, userRepo)
 	healthUsecase := usecase.NewHealthUseCase()
 

@@ -36,6 +36,10 @@ def escape_markdown_v1(text: str) -> str:
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming text messages."""
     try:
+        # Task enrichment flow: due date text input
+        from mainote_bot.bot.callbacks import handle_task_followups
+        if await handle_task_followups(update, context):
+            return
         # First check if this is part of the setup flow
         if await handle_setup_flow(update, context):
             return  # Message was handled by setup flow

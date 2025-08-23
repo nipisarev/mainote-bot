@@ -21,14 +21,15 @@ import (
 
 // Scheduler handles scheduling and sending notifications
 type Scheduler struct {
-	notificationRepo repository.NotificationRepository
-	userRepo         repository.UserRepository
-	noteRepo         repository.NoteRepository
-	formatter        *MorningNotificationFormatter
-	botURL           string
-	internalAPIKey   string
-	cron             *cron.Cron
-	httpClient       *http.Client
+	notificationRepo     repository.NotificationRepository
+	userRepo             repository.UserRepository
+	noteRepo             repository.NoteRepository
+	formatter            *MorningNotificationFormatter
+	botURL               string
+	internalAPIKey       string
+	cron                 *cron.Cron
+	httpClient           *http.Client
+	notificationNotesMap map[uuid.UUID]map[int]string
 }
 
 // NewScheduler creates a new notification scheduler
@@ -39,14 +40,15 @@ func NewScheduler(
 ) *Scheduler {
 	formatter := NewMorningNotificationFormatter(noteRepo)
 	return &Scheduler{
-		notificationRepo: notificationRepo,
-		userRepo:         userRepo,
-		noteRepo:         noteRepo,
-		formatter:        formatter,
-		botURL:           getEnv("MAINOTE_BOT_URL", "http://mainote-bot:8080"),
-		internalAPIKey:   getEnv("INTERNAL_API_KEY", ""),
-		cron:             cron.New(),
-		httpClient:       &http.Client{Timeout: 30 * time.Second},
+		notificationRepo:     notificationRepo,
+		userRepo:             userRepo,
+		noteRepo:             noteRepo,
+		formatter:            formatter,
+		botURL:               getEnv("MAINOTE_BOT_URL", "http://mainote-bot:8080"),
+		internalAPIKey:       getEnv("INTERNAL_API_KEY", ""),
+		cron:                 cron.New(),
+		httpClient:           &http.Client{Timeout: 30 * time.Second},
+		notificationNotesMap: make(map[uuid.UUID]map[int]string),
 	}
 }
 
@@ -93,6 +95,73 @@ func (s *Scheduler) Schedule(ctx context.Context, userID string, message string,
 		Time("send_at_utc", utcTime).
 		Time("send_at_local", userLocalTime).
 		Msg("Scheduled notification created")
+
+	return nil
+}
+
+// ScheduleWithNotesMap schedules a notification with an optional notes map for interactive browsing
+func (s *Scheduler) ScheduleWithNotesMap(ctx context.Context, userID string, message string, userLocalTime time.Time, notesMap map[int]string) error {
+	// Parse userID as UUID
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	// Get user settings including timezone by user ID
+	userSettings, err := s.userRepo.FindSettingsByUserID(ctx, userUUID)
+	if err != nil {
+		return fmt.Errorf("failed to find user settings: %w", err)
+	}
+
+	// Convert user local time to UTC
+	utcTime, err := s.convertToUTC(userLocalTime, userSettings.Timezone)
+	if err != nil {
+		return fmt.Errorf("failed to convert time to UTC: %w", err)
+	}
+
+	// Create scheduled notification
+	notification := &domain.ScheduledNotification{
+		ID:        uuid.New(),
+		UserID:    userUUID,
+		Message:   message,
+		SendAt:    utcTime,
+		Delivered: false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Save to database
+	err = s.notificationRepo.Create(ctx, notification)
+	if err != nil {
+		return fmt.Errorf("failed to create notification: %w", err)
+	}
+
+	// Store notes map for this notification if provided
+	if notesMap != nil && len(notesMap) > 0 {
+		// Store in a simple map for now - in production, use proper storage
+		if s.notificationNotesMap == nil {
+			s.notificationNotesMap = make(map[uuid.UUID]map[int]string)
+		}
+		s.notificationNotesMap[notification.ID] = notesMap
+
+		log.Info().
+			Str("notification_id", notification.ID.String()).
+			Int("notes_map_size", len(notesMap)).
+			Interface("notes_map", notesMap).
+			Msg("Stored notes map for notification")
+	} else {
+		log.Info().
+			Str("notification_id", notification.ID.String()).
+			Msg("No notes map to store for notification")
+	}
+
+	log.Info().
+		Str("notification_id", notification.ID.String()).
+		Str("user_id", userID).
+		Time("send_at_utc", utcTime).
+		Time("send_at_local", userLocalTime).
+		Int("notes_count", len(notesMap)).
+		Msg("Scheduled notification created with notes map")
 
 	return nil
 }
@@ -169,6 +238,9 @@ func (s *Scheduler) processNotifications(ctx context.Context) error {
 				Str("notification_id", notification.ID.String()).
 				Msg("Failed to mark notification as delivered")
 		}
+
+		// Clean up notes map to avoid memory leaks
+		delete(s.notificationNotesMap, notification.ID)
 
 		// Schedule next day's morning notification if this was a morning notification
 		if err := s.scheduleNextMorningNotification(ctx, notification); err != nil {
@@ -286,11 +358,18 @@ func (s *Scheduler) scheduleMorningNotificationForUser(ctx context.Context, user
 			Msg("Failed to cancel old notifications with different time, continuing with scheduling")
 	}
 
-	// Generate morning notification message
-	message := s.formatter.GenerateMessage(ctx, userWithSettings)
+	// Generate morning notification message with notes map
+	message, notesMap := s.formatter.GenerateMessageWithNotesMap(ctx, userWithSettings)
+
+	// Debug log for notes map
+	log.Info().
+		Str("user_id", userWithSettings.User.ID.String()).
+		Int("notes_map_size", len(notesMap)).
+		Interface("notes_map", notesMap).
+		Msg("Generated notes map for morning notification")
 
 	// Schedule the notification
-	err = s.Schedule(ctx, userWithSettings.User.ID.String(), message, nextMorning)
+	err = s.ScheduleWithNotesMap(ctx, userWithSettings.User.ID.String(), message, nextMorning, notesMap)
 	if err != nil {
 		return fmt.Errorf("failed to schedule morning notification: %w", err)
 	}
@@ -476,11 +555,26 @@ func (s *Scheduler) scheduleNextMorningNotification(ctx context.Context, deliver
 	nextMorning := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, location)
 	nextMorning = nextMorning.AddDate(0, 0, 1) // Always schedule for tomorrow
 
-	// Generate morning notification message
-	message := s.formatter.GenerateMessage(ctx, userWithSettings)
+	// Check if there's already a future morning notification scheduled for this user
+	hasExistingNotification, err := s.hasFutureMorningNotification(ctx, deliveredNotification.UserID, nextMorning)
+	if err != nil {
+		log.Warn().
+			Err(err).
+			Str("user_id", deliveredNotification.UserID.String()).
+			Msg("Failed to check for existing notifications, continuing with scheduling")
+	} else if hasExistingNotification {
+		log.Info().
+			Str("user_id", deliveredNotification.UserID.String()).
+			Time("scheduled_time", nextMorning).
+			Msg("Next morning notification already scheduled for user, skipping")
+		return nil
+	}
+
+	// Generate morning notification message with notes map
+	message, notesMap := s.formatter.GenerateMessageWithNotesMap(ctx, userWithSettings)
 
 	// Schedule the notification
-	err = s.Schedule(ctx, deliveredNotification.UserID.String(), message, nextMorning)
+	err = s.ScheduleWithNotesMap(ctx, deliveredNotification.UserID.String(), message, nextMorning, notesMap)
 	if err != nil {
 		return fmt.Errorf("failed to schedule next morning notification: %w", err)
 	}
@@ -523,12 +617,23 @@ func (s *Scheduler) sendNotification(ctx context.Context, notification domain.Sc
 		Str("api_key_set", fmt.Sprintf("%t", s.internalAPIKey != "")).
 		Msg("Attempting to send notification to bot")
 
+	// Get notes map for this notification
+	notesMap := s.notificationNotesMap[notification.ID]
+
+	// Debug log for notes map retrieval
+	log.Info().
+		Str("notification_id", notification.ID.String()).
+		Int("retrieved_notes_map_size", len(notesMap)).
+		Interface("retrieved_notes_map", notesMap).
+		Msg("Retrieved notes map for notification")
+
 	// Create payload
 	payload := domain.NotificationPayload{
-		ChatID:  chatID,
-		Type:    "morning_notification",
-		Message: notification.Message,
-		ID:      notification.ID.String(),
+		ChatID:   chatID,
+		Type:     "morning_notification",
+		Message:  notification.Message,
+		ID:       notification.ID.String(),
+		NotesMap: notesMap,
 	}
 
 	// Convert to JSON
@@ -544,6 +649,7 @@ func (s *Scheduler) sendNotification(ctx context.Context, notification domain.Sc
 	log.Info().
 		Str("notification_id", notification.ID.String()).
 		Str("payload", string(jsonData)).
+		Int("payload_notes_map_size", len(payload.NotesMap)).
 		Msg("Sending notification payload")
 
 	// Create HTTP request

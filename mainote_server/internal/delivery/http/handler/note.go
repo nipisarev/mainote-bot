@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
 	"mainote-server/internal/domain"
 	"mainote-server/internal/usecase"
 	api "mainote-server/pkg/generated/api"
+
+	"github.com/google/uuid"
 )
 
 // NoteHandler handles HTTP requests for notes and implements NotesAPIServicer.
@@ -32,10 +33,32 @@ func (h *NoteHandler) CreateNote(ctx context.Context, req api.CreateNoteRequest)
 		transcription = &req.Transcription
 	}
 
-	// Convert metadata if provided
+	// Convert metadata if provided and merge extended fields if present
 	var metadata interface{}
 	if len(req.Metadata) > 0 {
 		metadata = req.Metadata
+	}
+	// Merge due_at/effort_min/priority into metadata to allow usecase to map
+	// when updating later; create path sets defaults in usecase.
+	if (req.DueAt != time.Time{}) || req.EffortMin != 0 || req.Priority != 0 {
+		mm := map[string]interface{}{}
+		if m, ok := metadata.(map[string]interface{}); ok {
+			for k, v := range m {
+				mm[k] = v
+			}
+		}
+		if req.DueAt != (time.Time{}) {
+			mm["due_at"] = req.DueAt.Format(time.RFC3339)
+		}
+		if req.EffortMin != 0 {
+			mm["effort_min"] = req.EffortMin
+		}
+		if req.Priority != 0 {
+			mm["priority"] = req.Priority
+		}
+		if len(mm) > 0 {
+			metadata = mm
+		}
 	}
 
 	note, err := h.noteUsecase.CreateNote(ctx, req.ChatId, req.Title, req.Content,
@@ -176,6 +199,30 @@ func (h *NoteHandler) UpdateNote(ctx context.Context, noteId string, chatId stri
 		metadata = req.Metadata
 	}
 
+	// Include due_at/effort_min/priority in metadata if provided
+	// The usecase maps these to concrete fields on the note.
+	if req.DueAt != (time.Time{}) {
+		if metadata == nil {
+			metadata = map[string]interface{}{}
+		}
+		mm := metadata.(map[string]interface{})
+		mm["due_at"] = req.DueAt.Format(time.RFC3339)
+	}
+	if req.EffortMin != 0 {
+		if metadata == nil {
+			metadata = map[string]interface{}{}
+		}
+		mm := metadata.(map[string]interface{})
+		mm["effort_min"] = req.EffortMin
+	}
+	if req.Priority != 0 {
+		if metadata == nil {
+			metadata = map[string]interface{}{}
+		}
+		mm := metadata.(map[string]interface{})
+		mm["priority"] = req.Priority
+	}
+
 	// Check if at least one field is provided
 	if title == nil && content == nil && category == nil && status == nil &&
 		voiceFileID == nil && transcription == nil && metadata == nil {
@@ -251,6 +298,7 @@ func (h *NoteHandler) DeleteNote(ctx context.Context, noteId string, chatId stri
 func domainNoteToAPIResponse(note *domain.Note) api.NoteResponse {
 	var title, voiceFileID, transcription *string
 	var deletedAt *time.Time
+	var dueAt *time.Time
 
 	// Handle nullable fields
 	if note.Title != nil {
@@ -264,6 +312,9 @@ func domainNoteToAPIResponse(note *domain.Note) api.NoteResponse {
 	}
 	if note.DeletedAt != nil {
 		deletedAt = note.DeletedAt
+	}
+	if note.DueAt != nil {
+		dueAt = note.DueAt
 	}
 
 	// Convert metadata to map[string]interface{} if it exists
@@ -289,6 +340,9 @@ func domainNoteToAPIResponse(note *domain.Note) api.NoteResponse {
 		Source:        note.Source,
 		VoiceFileId:   voiceFileID,
 		Transcription: transcription,
+		DueAt:         dueAt,
+		EffortMin:     int32(note.EffortMin),
+		Priority:      int32(note.Priority),
 		Metadata:      metadataMap,
 		CreatedAt:     note.CreatedAt,
 		UpdatedAt:     note.UpdatedAt,

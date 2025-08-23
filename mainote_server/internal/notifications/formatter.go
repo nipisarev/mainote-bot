@@ -67,8 +67,8 @@ func (f *MorningNotificationFormatter) FormatNoteTitle(note domain.Note) string 
 	}
 
 	// Truncate title to reasonable length
-	if len(title) > 40 {
-		title = title[:40] + "..."
+	if len(title) > 30 {
+		title = title[:30] + "..."
 	}
 
 	return title
@@ -97,22 +97,67 @@ func (f *MorningNotificationFormatter) ShouldShowContentPreview(title, content s
 	return content != title && content != "" && !strings.HasPrefix(content, title)
 }
 
-// FormatNoteItem formats a single note item for display
-func (f *MorningNotificationFormatter) FormatNoteItem(note domain.Note) string {
+// FormatNoteItem formats a single note item for display with index
+func (f *MorningNotificationFormatter) FormatNoteItem(note domain.Note, index int) string {
 	title := f.FormatNoteTitle(note)
 	content := f.FormatNoteContent(note)
 
 	var result strings.Builder
 
 	if title != "" {
-		result.WriteString(fmt.Sprintf("   • %s\n", title))
-		// Only show content preview if it provides additional info
-		if f.ShouldShowContentPreview(title, content) {
-			result.WriteString(fmt.Sprintf("     %s\n", content))
-		}
+		result.WriteString(fmt.Sprintf("   %d. %s", index+1, title))
 	} else {
-		result.WriteString(fmt.Sprintf("   • %s\n", content))
+		result.WriteString(fmt.Sprintf("   %d. %s", index+1, content))
 	}
+
+	// Extras
+	extras := []string{}
+	if note.DueAt != nil {
+		extras = append(extras, fmt.Sprintf("⏰ %s", note.DueAt.Format("2006-01-02")))
+	}
+	if note.EffortMin > 0 {
+		extras = append(extras, fmt.Sprintf("⏳ %dm", note.EffortMin))
+	}
+	if note.Priority != 0 {
+		extras = append(extras, fmt.Sprintf("⭐ %d", note.Priority))
+	}
+	if len(extras) > 0 {
+		result.WriteString("  (" + strings.Join(extras, " • ") + ")")
+	}
+
+	result.WriteString("\n")
+
+	return result.String()
+}
+
+// FormatNoteItemCompact formats a single note item with cleaner, more compact styling
+func (f *MorningNotificationFormatter) FormatNoteItemCompact(note domain.Note, index int) string {
+	title := f.FormatNoteTitle(note)
+	content := f.FormatNoteContent(note)
+
+	var result strings.Builder
+
+	if title != "" {
+		result.WriteString(fmt.Sprintf("▸ %d. %s", index+1, title))
+	} else {
+		result.WriteString(fmt.Sprintf("▸ %d. %s", index+1, content))
+	}
+
+	extras := []string{}
+	if note.DueAt != nil {
+		extras = append(extras, fmt.Sprintf("⏰ %s", note.DueAt.Format("2006-01-02")))
+	}
+	if note.EffortMin > 0 {
+		extras = append(extras, fmt.Sprintf("⏳ %dm", note.EffortMin))
+	}
+	if note.Priority != 0 {
+		extras = append(extras, fmt.Sprintf("⭐ %d", note.Priority))
+	}
+	if len(extras) > 0 {
+		result.WriteString("  (" + strings.Join(extras, " • ") + ")")
+	}
+
+	result.WriteString("\n")
 
 	return result.String()
 }
@@ -125,19 +170,53 @@ func (f *MorningNotificationFormatter) FormatCategorySection(category string, no
 
 	var result strings.Builder
 
-	// Category header
+	// Category header with improved formatting
 	emoji := f.GetCategoryEmoji(category)
 	categoryTitle := strings.ToUpper(category[:1]) + category[1:]
-	result.WriteString(fmt.Sprintf("%s %s (%d):\n", emoji, categoryTitle, len(notes)))
+	result.WriteString(fmt.Sprintf("┌─ %s %s (%d)\n", emoji, categoryTitle, len(notes)))
 
 	// Format notes (limit to 5 per category)
 	maxNotes := 5
 	for i, note := range notes {
 		if i >= maxNotes {
-			result.WriteString(fmt.Sprintf("   ...and %d more\n", len(notes)-maxNotes))
+			result.WriteString(fmt.Sprintf("   │ ...and %d more\n", len(notes)-maxNotes))
 			break
 		}
-		result.WriteString(f.FormatNoteItem(note))
+		formattedNote := f.FormatNoteItem(note, i)
+		// Add vertical line prefix for better visual hierarchy
+		lines := strings.Split(strings.TrimSuffix(formattedNote, "\n"), "\n")
+		for _, line := range lines {
+			if strings.TrimSpace(line) != "" {
+				result.WriteString(fmt.Sprintf("   │ %s\n", strings.TrimPrefix(line, "   ")))
+			}
+		}
+	}
+
+	result.WriteString("   └─────────────────────────────────────────\n\n")
+	return result.String()
+}
+
+// FormatCategorySectionCompact formats a complete category section with cleaner styling
+func (f *MorningNotificationFormatter) FormatCategorySectionCompact(category string, notes []domain.Note) string {
+	if len(notes) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+
+	// Category header with cleaner formatting
+	emoji := f.GetCategoryEmoji(category)
+	categoryTitle := strings.ToUpper(category[:1]) + category[1:]
+	result.WriteString(fmt.Sprintf("━━ %s %s (%d) ━━\n", emoji, categoryTitle, len(notes)))
+
+	// Format notes (limit to 5 per category)
+	maxNotes := 5
+	for i, note := range notes {
+		if i >= maxNotes {
+			result.WriteString(fmt.Sprintf("▸ ...and %d more\n", len(notes)-maxNotes))
+			break
+		}
+		result.WriteString(f.FormatNoteItemCompact(note, i))
 	}
 
 	result.WriteString("\n")
@@ -189,11 +268,11 @@ func (f *MorningNotificationFormatter) GenerateMessage(ctx context.Context, user
 	// Add notes section header
 	message.WriteString("📝 Your active notes:\n\n")
 
-	// Process categories in defined order
+	// Process categories in defined order using the new compact formatting
 	categoryOrder := f.GetCategoryOrder()
 	for _, categoryInfo := range categoryOrder {
 		if categoryNotes, exists := notesByCategory[categoryInfo.Name]; exists {
-			message.WriteString(f.FormatCategorySection(categoryInfo.Name, categoryNotes))
+			message.WriteString(f.FormatCategorySectionCompact(categoryInfo.Name, categoryNotes))
 		}
 	}
 
@@ -208,7 +287,7 @@ func (f *MorningNotificationFormatter) GenerateMessage(ctx context.Context, user
 		}
 
 		if !found {
-			message.WriteString(f.FormatCategorySection(category, categoryNotes))
+			message.WriteString(f.FormatCategorySectionCompact(category, categoryNotes))
 		}
 	}
 
@@ -216,4 +295,139 @@ func (f *MorningNotificationFormatter) GenerateMessage(ctx context.Context, user
 	message.WriteString("Have a productive day! 🚀")
 
 	return message.String()
+}
+
+// GenerateNotesMap generates a map of note numbers to note UUIDs for interactive browsing
+func (f *MorningNotificationFormatter) GenerateNotesMap(notes []domain.Note) map[int]string {
+	notesMap := make(map[int]string)
+
+	log.Info().
+		Int("input_notes_count", len(notes)).
+		Msg("Starting to generate notes map")
+
+	// Group notes by category first
+	notesByCategory := f.GroupNotesByCategory(notes)
+
+	log.Info().
+		Int("categories_count", len(notesByCategory)).
+		Interface("categories", func() map[string]int {
+			counts := make(map[string]int)
+			for cat, catNotes := range notesByCategory {
+				counts[cat] = len(catNotes)
+			}
+			return counts
+		}()).
+		Msg("Grouped notes by category")
+
+	// Process categories in defined order
+	categoryOrder := f.GetCategoryOrder()
+	noteNumber := 1
+
+	for _, categoryInfo := range categoryOrder {
+		if categoryNotes, exists := notesByCategory[categoryInfo.Name]; exists {
+			log.Info().
+				Str("category", categoryInfo.Name).
+				Int("category_notes_count", len(categoryNotes)).
+				Int("starting_note_number", noteNumber).
+				Msg("Processing category")
+
+			// Limit to 5 notes per category (matching the display limit)
+			maxNotes := 5
+			for i, note := range categoryNotes {
+				if i >= maxNotes {
+					break
+				}
+				notesMap[noteNumber] = note.NoteID.String()
+				log.Debug().
+					Int("note_number", noteNumber).
+					Str("note_id", note.NoteID.String()).
+					Str("category", categoryInfo.Name).
+					Msg("Added note to map")
+				noteNumber++
+			}
+		}
+	}
+
+	// Add any remaining categories not in the predefined order
+	for category, categoryNotes := range notesByCategory {
+		found := false
+		for _, categoryInfo := range categoryOrder {
+			if category == categoryInfo.Name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Info().
+				Str("category", category).
+				Int("category_notes_count", len(categoryNotes)).
+				Int("starting_note_number", noteNumber).
+				Msg("Processing additional category")
+
+			maxNotes := 5
+			for i, note := range categoryNotes {
+				if i >= maxNotes {
+					break
+				}
+				notesMap[noteNumber] = note.NoteID.String()
+				log.Debug().
+					Int("note_number", noteNumber).
+					Str("note_id", note.NoteID.String()).
+					Str("category", category).
+					Msg("Added note to map")
+				noteNumber++
+			}
+		}
+	}
+
+	log.Info().
+		Int("final_notes_map_size", len(notesMap)).
+		Interface("final_notes_map", notesMap).
+		Msg("Completed generating notes map")
+
+	return notesMap
+}
+
+// GenerateMessageWithNotesMap generates the complete morning notification message with notes map
+func (f *MorningNotificationFormatter) GenerateMessageWithNotesMap(ctx context.Context, userWithSettings domain.UserWithSettings) (string, map[int]string) {
+	// Fetch active notes for the user
+	activeStatus := "active"
+	notes, err := f.noteRepo.GetNotesForUser(ctx, userWithSettings.Settings.ChatID, nil, &activeStatus, 50, 0)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("user_id", userWithSettings.User.ID.String()).
+			Str("chat_id", userWithSettings.Settings.ChatID).
+			Msg("Failed to fetch notes for morning notification")
+		return "This is your daily morning notification.", nil
+	}
+
+	if len(notes.Notes) == 0 {
+		log.Info().
+			Str("user_id", userWithSettings.User.ID.String()).
+			Str("chat_id", userWithSettings.Settings.ChatID).
+			Msg("No active notes found for user")
+		return "🌅 Good morning! Hope you have a great day ahead!\n\nYou have no active notes. Have a great day!", nil
+	}
+
+	log.Info().
+		Str("user_id", userWithSettings.User.ID.String()).
+		Str("chat_id", userWithSettings.Settings.ChatID).
+		Int("notes_count", len(notes.Notes)).
+		Msg("Fetched notes for morning notification")
+
+	// Generate the message
+	message := f.GenerateMessage(ctx, userWithSettings)
+
+	// Generate the notes map
+	notesMap := f.GenerateNotesMap(notes.Notes)
+
+	log.Info().
+		Str("user_id", userWithSettings.User.ID.String()).
+		Int("notes_map_size", len(notesMap)).
+		Interface("notes_map", notesMap).
+		Msg("Generated notes map")
+
+	return message, notesMap
 }

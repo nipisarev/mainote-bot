@@ -3,11 +3,11 @@ import os
 import httpx
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, Header
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from mainote_bot.utils.logging import logger
 from mainote_bot.config import INTERNAL_API_KEY
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 
 # Add Pydantic model for notification request
 class NotificationRequest(BaseModel):
@@ -15,8 +15,60 @@ class NotificationRequest(BaseModel):
     type: str  # morning_notification/ai_summary/reminder
     message: str
     id: str  # UUID for logging
+    notes_map: Optional[Dict[int, str]] = None  # note_number -> note_uuid mapping
 
 router = APIRouter()
+
+# Constants for pagination
+NOTES_PER_PAGE = 10
+
+def create_notes_buttons(notes_map: Dict[int, str], page: int = 0) -> InlineKeyboardMarkup:
+    """Create inline keyboard buttons for note browsing with pagination."""
+    if not notes_map:
+        return InlineKeyboardMarkup([])
+    
+    buttons = []
+    note_numbers = sorted(notes_map.keys())
+    
+    # Calculate pagination
+    start_idx = page * NOTES_PER_PAGE
+    end_idx = min(start_idx + NOTES_PER_PAGE, len(note_numbers))
+    
+    # Create number buttons in rows of 5
+    current_row = []
+    for i in range(start_idx, end_idx):
+        note_num = note_numbers[i]
+        current_row.append(InlineKeyboardButton(
+            str(note_num), 
+            callback_data=f"note_browse_{note_num}_{notes_map[note_num]}"
+        ))
+        
+        # Add row every 5 buttons
+        if len(current_row) == 5:
+            buttons.append(current_row)
+            current_row = []
+    
+    # Add remaining buttons
+    if current_row:
+        buttons.append(current_row)
+    
+    # Add navigation buttons
+    nav_buttons = []
+    total_pages = (len(note_numbers) + NOTES_PER_PAGE - 1) // NOTES_PER_PAGE
+    
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"notes_page_{page-1}"))
+    
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("➡️ Next", callback_data=f"notes_page_{page+1}"))
+    
+    if nav_buttons:
+        buttons.append(nav_buttons)
+    
+    # Add close button
+    buttons.append([InlineKeyboardButton("❌ Close", callback_data="notes_close")])
+    
+    return InlineKeyboardMarkup(buttons)
 
 @router.post("/webhook")
 async def webhook(request: Request):
@@ -68,16 +120,38 @@ async def notification(
         notification_type = notification_data.type
         message = notification_data.message
         notification_id = notification_data.id
+        notes_map = notification_data.notes_map
         
         # Log the notification request
         logger.info(f"Received notification request - ID: {notification_id}, Type: {notification_type}, Chat: {chat_id}")
         
-        # Send message to the user
-        await bot.send_message(
-            chat_id=chat_id,
-            text=message,
-            parse_mode=None  # Send as plain text to avoid formatting issues
-        )
+        # Handle morning notification with interactive buttons
+        if notification_type == "morning_notification" and notes_map:
+            keyboard = create_notes_buttons(notes_map)
+            
+            # Store notes map in a temporary storage (you might want to use Redis or similar)
+            # For now, we'll include it in the callback data
+            
+            await bot.send_message(
+                chat_id=chat_id,
+                text=f"{message}\n\n📱 Tap a number to view that note:",
+                reply_markup=keyboard,
+                parse_mode=None
+            )
+            
+            # Store the notes map in the bot's context for later use
+            # This is a simplified approach - in production, use proper storage
+            if not hasattr(bot, '_notes_storage'):
+                bot._notes_storage = {}
+            bot._notes_storage[chat_id] = notes_map
+            
+        else:
+            # Send regular notification without buttons
+            await bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode=None
+            )
         
         logger.info(f"Successfully sent notification {notification_id} to chat {chat_id}")
         

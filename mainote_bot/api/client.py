@@ -360,60 +360,231 @@ class MainoteAPIClient:
     async def get_notes(self, chat_id: str, category: str = None, status: str = "active", 
                        limit: int = 50, offset: int = 0) -> Dict[str, Any]:
         """
-        Get notes for a user.
+        Get notes for a user with optional filtering.
         
         Args:
-            chat_id: Telegram chat ID as string
+            chat_id: User's Telegram chat ID
             category: Filter by category (optional)
-            status: Filter by status (default: "active")
+            status: Filter by status (default: active)
             limit: Maximum number of notes to return (default: 50)
             offset: Number of notes to skip (default: 0)
             
         Returns:
-            Notes list data with pagination info
+            Dictionary containing notes list and pagination info
             
         Raises:
-            Exception: If getting notes fails
+            Exception: If API call fails
         """
         try:
             url = f"{self.server_url}/api/v1/notes"
+            
+            # Prepare query parameters
             params = {
-                "chat_id": chat_id,
-                "status": status,
-                "limit": limit,
-                "offset": offset
+                'chat_id': chat_id,
+                'limit': limit,
+                'offset': offset
             }
             
             if category:
-                params["category"] = category
+                params['category'] = category
+            if status:
+                params['status'] = status
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url, params=params)
                 
                 if response.status_code == 200:
                     notes_data = response.json()
-                    logger.info(f"Retrieved {len(notes_data.get('notes', []))} notes for chat_id {chat_id}")
+                    logger.info(f"Successfully retrieved {len(notes_data.get('notes', []))} notes for chat_id {chat_id}")
                     return notes_data
+                elif response.status_code == 404:
+                    logger.info(f"No notes found for chat_id {chat_id}")
+                    return {'notes': [], 'pagination': {'total': 0, 'limit': limit, 'offset': offset}}
                 else:
-                    error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {"error": response.text}
-                    logger.error(f"API error getting notes for chat_id {chat_id}: {response.status_code} - {error_data}")
+                    error_message = f"Failed to get notes: {response.status_code} - {response.text}"
+                    logger.error(error_message)
+                    raise Exception(error_message)
                     
-                    if response.status_code == 404:
-                        raise Exception("User not found - please complete setup first")
-                    else:
-                        raise Exception(f"Failed to get notes: {error_data.get('message', 'Unknown error')}")
-                        
         except httpx.TimeoutException:
-            logger.error(f"Timeout getting notes for chat_id {chat_id}")
-            raise Exception("Server timeout - please try again later")
-        except httpx.RequestError as e:
-            logger.error(f"Request error getting notes for chat_id {chat_id}: {str(e)}")
-            raise Exception("Unable to connect to server - please try again later")
+            error_message = "Server timeout while getting notes"
+            logger.error(error_message)
+            raise Exception(error_message)
         except Exception as e:
-            if any(msg in str(e) for msg in ["User not found", "Failed to get notes", "Server timeout", "Unable to connect"]):
-                raise  # Re-raise our custom exceptions
-            logger.error(f"Unexpected error getting notes for chat_id {chat_id}: {str(e)}")
-            raise Exception("An unexpected error occurred - please try again later")
+            logger.error(f"Error getting notes for chat_id {chat_id}: {str(e)}")
+            raise
+
+    async def get_note_by_id(self, note_id: str, chat_id: str) -> Dict[str, Any]:
+        """
+        Get a specific note by its ID.
+        
+        Args:
+            note_id: UUID of the note to retrieve
+            chat_id: User's chat ID for authorization
+            
+        Returns:
+            Dictionary containing note details
+            
+        Raises:
+            Exception: If API call fails or note not found
+        """
+        try:
+            url = f"{self.server_url}/api/v1/note/{note_id}"
+            params = {"chat_id": chat_id}
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params)
+                
+                if response.status_code == 200:
+                    note_data = response.json()
+                    logger.info(f"Successfully retrieved note {note_id}")
+                    return note_data
+                elif response.status_code == 404:
+                    error_message = f"Note {note_id} not found"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                else:
+                    error_message = f"Failed to get note {note_id}: {response.status_code} - {response.text}"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                    
+        except httpx.TimeoutException:
+            error_message = f"Server timeout while getting note {note_id}"
+            logger.error(error_message)
+            raise Exception(error_message)
+        except Exception as e:
+            logger.error(f"Error getting note {note_id}: {str(e)}")
+            raise
+
+    async def update_note_status(self, note_id: str, status: str, chat_id: str) -> Dict[str, Any]:
+        """
+        Update the status of a specific note.
+        
+        Args:
+            note_id: UUID of the note to update
+            status: New status for the note (e.g., "completed", "active", "archived")
+            chat_id: User's chat ID for authorization
+            
+        Returns:
+            Dictionary containing updated note details
+            
+        Raises:
+            Exception: If API call fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/note/{note_id}"
+            params = {"chat_id": chat_id}
+            
+            data = {
+                "status": status
+            }
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.put(url, json=data, params=params)
+                
+                if response.status_code == 200:
+                    note_data = response.json()
+                    logger.info(f"Successfully updated note {note_id} status to {status}")
+                    return note_data
+                elif response.status_code == 404:
+                    error_message = f"Note {note_id} not found"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                else:
+                    error_message = f"Failed to update note {note_id}: {response.status_code} - {response.text}"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                    
+        except httpx.TimeoutException:
+            error_message = f"Server timeout while updating note {note_id}"
+            logger.error(error_message)
+            raise Exception(error_message)
+        except Exception as e:
+            logger.error(f"Error updating note {note_id}: {str(e)}")
+            raise
+
+    async def update_note(self, note_id: str, chat_id: str, *, title: str = None, content: str = None,
+                          category: str = None, status: str = None, voice_file_id: str = None,
+                          transcription: str = None, metadata: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """
+        Update a note with arbitrary fields, including metadata extensions
+        like due_at (RFC3339), effort_min (int), priority (int).
+        """
+        url = f"{self.server_url}/api/v1/note/{note_id}"
+        params = {"chat_id": chat_id}
+
+        data: Dict[str, Any] = {}
+        if title is not None:
+            data["title"] = title
+        if content is not None:
+            data["content"] = content
+        if category is not None:
+            data["category"] = category
+        if status is not None:
+            data["status"] = status
+        if voice_file_id is not None:
+            data["voice_file_id"] = voice_file_id
+        if transcription is not None:
+            data["transcription"] = transcription
+        if metadata is not None:
+            data["metadata"] = metadata
+
+        if not data:
+            raise Exception("No fields provided to update")
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.put(url, json=data, params=params)
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code == 404:
+                    raise Exception("Note not found")
+                else:
+                    raise Exception(f"Failed to update note: {response.status_code} - {response.text}")
+        except httpx.TimeoutException:
+            raise Exception("Server timeout while updating note")
+        except Exception:
+            raise
+
+    async def delete_note(self, note_id: str, chat_id: str) -> bool:
+        """
+        Delete a specific note.
+        
+        Args:
+            note_id: UUID of the note to delete
+            chat_id: User's chat ID for authorization
+            
+        Returns:
+            True if deletion successful
+            
+        Raises:
+            Exception: If API call fails
+        """
+        try:
+            url = f"{self.server_url}/api/v1/note/{note_id}"
+            params = {"chat_id": chat_id}
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.delete(url, params=params)
+                
+                if response.status_code in [200, 204]:
+                    logger.info(f"Successfully deleted note {note_id}")
+                    return True
+                elif response.status_code == 404:
+                    error_message = f"Note {note_id} not found"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                else:
+                    error_message = f"Failed to delete note {note_id}: {response.status_code} - {response.text}"
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                    
+        except httpx.TimeoutException:
+            error_message = f"Server timeout while deleting note {note_id}"
+            logger.error(error_message)
+            raise Exception(error_message)
+        except Exception as e:
+            logger.error(f"Error deleting note {note_id}: {str(e)}")
+            raise
 
     # Apps and Integration methods
     async def get_apps(self) -> List[Dict[str, Any]]:

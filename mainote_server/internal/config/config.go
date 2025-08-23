@@ -6,12 +6,13 @@ import (
 )
 
 type Config struct {
-	Port            string
-	SentryDSN       string
-	Environment     string
-	DatabaseURL     string
-	NotionAPIKey    string
+	Port             string
+	SentryDSN        string
+	Environment      string
+	DatabaseURL      string
+	NotionAPIKey     string
 	NotionDatabaseID string
+	OpenAIAPIKey     string
 }
 
 func Load() *Config {
@@ -21,17 +22,18 @@ func Load() *Config {
 	dbHost := getEnv("DATABASE_HOST", "postgres")
 	dbPort := getEnv("DATABASE_PORT", "5432")
 	dbName := getEnv("POSTGRES_DB", "mainote")
-	
+
 	databaseURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	return &Config{
-		Port:            getEnv("APP_PORT", "8081"),
-		SentryDSN:       getEnv("SENTRY_DSN", ""),
-		Environment:     getEnv("ENVIRONMENT", "development"),
-		DatabaseURL:     databaseURL,
-		NotionAPIKey:    getEnv("NOTION_API_KEY", ""),
+		Port:             getEnv("APP_PORT", "8081"),
+		SentryDSN:        getEnv("SENTRY_DSN", ""),
+		Environment:      getEnv("ENVIRONMENT", "development"),
+		DatabaseURL:      databaseURL,
+		NotionAPIKey:     getEnv("NOTION_API_KEY", ""),
 		NotionDatabaseID: getEnv("NOTION_DATABASE_ID", ""),
+		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
 	}
 }
 

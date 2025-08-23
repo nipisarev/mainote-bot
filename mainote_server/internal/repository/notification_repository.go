@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,6 +42,14 @@ func (r *notificationRepository) Create(ctx context.Context, notification *domai
 		notification.CreatedAt,
 		notification.UpdatedAt,
 	)
+
+	// Handle duplicate notification attempts gracefully
+	if err != nil && strings.Contains(err.Error(), "unique_user_notification_time") {
+		// This is a duplicate notification - log it but don't fail
+		// The application logic should already prevent this, but this is a safety net
+		return nil
+	}
+
 	return err
 }
 

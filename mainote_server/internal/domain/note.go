@@ -19,6 +19,9 @@ type Note struct {
 	Source        string           `json:"source" db:"source"`
 	VoiceFileID   *string          `json:"voice_file_id,omitempty" db:"voice_file_id"`
 	Transcription *string          `json:"transcription,omitempty" db:"transcription"`
+	DueAt         *time.Time       `json:"due_at,omitempty" db:"due_at"`
+	EffortMin     int              `json:"effort_min" db:"effort_min"`
+	Priority      int              `json:"priority" db:"priority"`
 	Metadata      *json.RawMessage `json:"metadata,omitempty" db:"metadata"`
 	CreatedAt     time.Time        `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time        `json:"updated_at" db:"updated_at"`

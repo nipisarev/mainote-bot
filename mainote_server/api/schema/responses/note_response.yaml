@@ -45,6 +45,20 @@ properties:
     description: Voice transcription text
     nullable: true
     example: "This is transcribed voice message content"
+  due_at:
+    type: string
+    format: date-time
+    description: Optional deadline (UTC)
+    nullable: true
+    example: "2025-08-18T10:00:00Z"
+  effort_min:
+    type: integer
+    description: Estimated effort in minutes
+    example: 30
+  priority:
+    type: integer
+    description: Naive integer priority; higher is more important
+    example: 20
   metadata:
     type: object
     description: Additional metadata as JSON
