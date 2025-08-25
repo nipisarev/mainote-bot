@@ -8,7 +8,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # Server Configuration
-SERVER_URL = os.getenv('MAINOTE_SERVER_URL', 'http://localhost:8081')
+SERVER_URL = os.getenv('MAINOTE_SERVER_URL', 'http://mainote-server:8081')
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')

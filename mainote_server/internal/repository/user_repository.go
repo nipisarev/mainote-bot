@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -66,13 +67,17 @@ func (r *userRepository) FindByChatID(ctx context.Context, chatID string) (*doma
 		INNER JOIN user_settings us ON u.id = us.user_id 
 		WHERE us.chat_id = $1 AND u.deleted_at IS NULL AND us.deleted_at IS NULL`
 
+	log.Printf("FindByChatID: Looking for chat_id = %s", chatID)
+	
 	rows, err := r.db.QueryContext(ctx, query, chatID)
 	if err != nil {
+		log.Printf("FindByChatID: Query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
+		log.Printf("FindByChatID: No rows found for chat_id = %s", chatID)
 		return nil, sql.ErrNoRows // Return the expected error
 	}
 
@@ -85,8 +90,11 @@ func (r *userRepository) FindByChatID(ctx context.Context, chatID string) (*doma
 		&settings.CreatedAt, &settings.UpdatedAt, &settings.DeletedAt,
 	)
 	if err != nil {
+		log.Printf("FindByChatID: Scan error: %v", err)
 		return nil, err
 	}
+
+	log.Printf("FindByChatID: Successfully found user %s for chat_id %s", user.Email, chatID)
 
 	return &domain.UserWithSettings{
 		User:     user,

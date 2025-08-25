@@ -38,7 +38,8 @@ func NewScheduler(
 	userRepo repository.UserRepository,
 	noteRepo repository.NoteRepository,
 ) *Scheduler {
-	formatter := NewMorningNotificationFormatter(noteRepo)
+	// syncService will be injected later via constructor in main; for now create formatter with nil
+	formatter := NewMorningNotificationFormatter(noteRepo, nil)
 	return &Scheduler{
 		notificationRepo:     notificationRepo,
 		userRepo:             userRepo,
@@ -49,6 +50,14 @@ func NewScheduler(
 		cron:                 cron.New(),
 		httpClient:           &http.Client{Timeout: 30 * time.Second},
 		notificationNotesMap: make(map[uuid.UUID]map[int]string),
+	}
+}
+
+// SetFormatter replaces the internal MorningNotificationFormatter instance.
+// This is used to inject a formatter that has access to the SyncService.
+func (s *Scheduler) SetFormatter(formatter *MorningNotificationFormatter) {
+	if formatter != nil {
+		s.formatter = formatter
 	}
 }
 
@@ -699,6 +708,52 @@ func (s *Scheduler) sendNotification(ctx context.Context, notification domain.Sc
 		Int("status_code", resp.StatusCode).
 		Str("response_body", respBodyStr).
 		Msg("Notification sent successfully")
+
+	return nil
+}
+
+// SendMorningNotificationForChat sends a morning notification immediately for a specific chat_id
+func (s *Scheduler) SendMorningNotificationForChat(ctx context.Context, chatID string) error {
+	// Find the user by chat_id
+	userWithSettings, err := s.userRepo.FindByChatID(ctx, chatID)
+	if err != nil {
+		return fmt.Errorf("failed to find user by chat_id: %w", err)
+	}
+
+	// Generate message and notes map
+	message, notesMap := s.formatter.GenerateMessageWithNotesMap(ctx, *userWithSettings)
+
+	// Create a temporary scheduled notification to hold the notes map and ID
+	notification := &domain.ScheduledNotification{
+		ID:        uuid.New(),
+		UserID:    userWithSettings.User.ID,
+		Message:   message,
+		SendAt:    time.Now().UTC(),
+		Delivered: false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Store notes map for this notification
+	if notesMap != nil && len(notesMap) > 0 {
+		if s.notificationNotesMap == nil {
+			s.notificationNotesMap = make(map[uuid.UUID]map[int]string)
+		}
+		s.notificationNotesMap[notification.ID] = notesMap
+	}
+
+	// Send notification directly
+	if err := s.sendNotification(ctx, *notification); err != nil {
+		return fmt.Errorf("failed to send notification to bot: %w", err)
+	}
+
+	// Mark as delivered in DB for bookkeeping (optional)
+	if err := s.notificationRepo.MarkAsDelivered(ctx, notification.ID); err != nil {
+		log.Warn().Err(err).Msg("failed to mark ad-hoc notification as delivered")
+	}
+
+	// Clean up notes map
+	delete(s.notificationNotesMap, notification.ID)
 
 	return nil
 }

@@ -43,6 +43,7 @@ show_cli_help() {
     echo "  generate-api       Generate Go API code from OpenAPI specification"
     echo "  dev-bot         Start Python bot locally"
     echo "  dev-server             Start Go backend locally"
+    echo "  morning_notification Trigger morning notification for a user/chat (usage: mainote-cli morning_notification --userId=<id>)"
     echo ""
     echo -e "${GREEN}Database Commands:${NC}"
     echo "  db-migrate         Apply database migrations"
@@ -101,6 +102,79 @@ case "${1:-help}" in
     "restart")
         # Shortcut for restart
         make docker-restart
+        ;;
+    "morning_notification"|"morning_notificaton")
+        # Trigger a morning notification for a specific user/chat via admin endpoint
+        # Usage: mainote-cli morning_notification --userId=<chat_id_or_user_id>
+        USER_ID=""
+        for arg in "$@"; do
+            case "$arg" in
+                --userId=*) USER_ID="${arg#*=}" ;;
+                --chatId=*) USER_ID="${arg#*=}" ;;
+            esac
+        done
+
+        if [[ -z "$USER_ID" ]]; then
+            echo -e "${RED}Usage: mainote-cli morning_notification --userId=<chat_id_or_user_id>${NC}"
+            exit 1
+        fi
+
+        # Determine whether provided USER_ID looks like a UUID (user_id) or chat_id
+        # Simple heuristic: UUIDs contain dashes and are length 36
+        IS_UUID=0
+        if [[ ${#USER_ID} -eq 36 && "$USER_ID" == *"-"* ]]; then
+            IS_UUID=1
+        fi
+
+        # If server is running inside Docker (compose), run the request from within the container
+        if docker ps --format '{{.Names}}' | grep -q '^mainote_server$' 2>/dev/null; then
+            echo -e "${BLUE}Detected running container 'mainote_server' - executing request inside container...${NC}"
+            # Prefer docker compose exec if available, otherwise docker exec
+            if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+                if [[ "$IS_UUID" -eq 1 ]]; then
+                    PAYLOAD="{\"user_id\":\"${USER_ID}\"}"
+                else
+                    PAYLOAD="{\"chat_id\":\"${USER_ID}\"}"
+                fi
+                resp=$(docker compose exec -T mainote-server sh -lc "curl -s -w '\n%{http_code}' -X POST \"http://localhost:${APP_PORT:-8081}/api/v1/admin/notifications/morning\" -H 'Content-Type: application/json' -d '${PAYLOAD}'")
+            else
+                if [[ "$IS_UUID" -eq 1 ]]; then
+                    PAYLOAD="{\"user_id\":\"${USER_ID}\"}"
+                else
+                    PAYLOAD="{\"chat_id\":\"${USER_ID}\"}"
+                fi
+                resp=$(docker exec -i mainote_server sh -lc "curl -s -w '\n%{http_code}' -X POST \"http://localhost:${APP_PORT:-8081}/api/v1/admin/notifications/morning\" -H 'Content-Type: application/json' -d '${PAYLOAD}'")
+            fi
+            http_code=$(echo "$resp" | tail -n1)
+            body=$(echo "$resp" | sed '$d')
+        else
+            SERVER_URL="${MAINOTE_SERVER_URL:-http://localhost:8081}"
+            echo -e "${BLUE}Triggering morning notification for ${USER_ID} via ${SERVER_URL}...${NC}"
+
+            if [[ "$IS_UUID" -eq 1 ]]; then
+                PAYLOAD="{\"user_id\":\"${USER_ID}\"}"
+            else
+                PAYLOAD="{\"chat_id\":\"${USER_ID}\"}"
+            fi
+
+            resp=$(curl -s -w "\n%{http_code}" -X POST "$SERVER_URL/api/v1/admin/notifications/morning" \
+                -H "Content-Type: application/json" \
+                -d "${PAYLOAD}")
+
+            http_code=$(echo "$resp" | tail -n1)
+            body=$(echo "$resp" | sed '$d')
+        fi
+
+        if [[ "$http_code" == "200" ]]; then
+            echo -e "${GREEN}✔ Morning notification triggered successfully for ${USER_ID}${NC}"
+            exit 0
+        else
+            echo -e "${RED}✖ Failed to trigger morning notification (status: $http_code)${NC}"
+            if [[ -n "$body" ]]; then
+                echo "Response: $body"
+            fi
+            exit 2
+        fi
         ;;
     "reset")
         # Reset environment: stop, clean, build, and start

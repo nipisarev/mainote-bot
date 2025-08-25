@@ -13,13 +13,15 @@ import (
 
 // MorningNotificationFormatter handles formatting of morning notifications
 type MorningNotificationFormatter struct {
-	noteRepo repository.NoteRepository
+	noteRepo    repository.NoteRepository
+	syncService domain.SyncService
 }
 
 // NewMorningNotificationFormatter creates a new formatter instance
-func NewMorningNotificationFormatter(noteRepo repository.NoteRepository) *MorningNotificationFormatter {
+func NewMorningNotificationFormatter(noteRepo repository.NoteRepository, syncService domain.SyncService) *MorningNotificationFormatter {
 	return &MorningNotificationFormatter{
-		noteRepo: noteRepo,
+		noteRepo:    noteRepo,
+		syncService: syncService,
 	}
 }
 
@@ -243,6 +245,13 @@ func (f *MorningNotificationFormatter) GenerateMessage(ctx context.Context, user
 	// Start with greeting
 	var message strings.Builder
 	message.WriteString("🌅 Good morning! Hope you have a great day ahead!\n\n")
+
+	// Try to sync from integrations first (e.g., Google Calendar -> create events as notes)
+	if f.syncService != nil {
+		if err := f.syncService.SyncFromIntegrations(ctx, userWithSettings.Settings.ChatID); err != nil {
+			log.Warn().Err(err).Str("chat_id", userWithSettings.Settings.ChatID).Msg("Failed to sync from integrations before generating morning notification")
+		}
+	}
 
 	// Fetch active notes for the user
 	activeStatus := "active"

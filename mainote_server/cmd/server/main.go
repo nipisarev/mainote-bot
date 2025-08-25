@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +20,8 @@ import (
 	"mainote-server/internal/sync"
 	"mainote-server/internal/usecase"
 	api "mainote-server/pkg/generated/api"
+
+	"github.com/google/uuid"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
@@ -79,6 +82,12 @@ func main() {
 	// Initialize notification scheduler
 	scheduler := notifications.NewScheduler(notificationRepo, userRepo, noteRepo)
 
+	// Inject syncService into scheduler's formatter so morning notifications can pull events
+	// Note: this sets the internal formatter's syncService field to the running syncService instance
+	// by creating a new formatter with syncService and replacing the scheduler.formatter.
+	schedulerFormatter := notifications.NewMorningNotificationFormatter(noteRepo, syncService)
+	scheduler.SetFormatter(schedulerFormatter)
+
 	// Start notification scheduler in background
 	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
 	go func() {
@@ -120,11 +129,82 @@ func main() {
 	router.Use(middleware.LoggingMiddleware)
 	router.Use(middleware.SentryMiddleware)
 
+	// Create a mux so we can register custom admin endpoints alongside the generated router
+	mux := http.NewServeMux()
+
+	// Debug endpoint to test routing
+	mux.HandleFunc("/debug/routes", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Routes are working! Users API should be at /api/v1/users/chat/{chat_id}"))
+	})
+
+	// Register the main router for all other routes
+	mux.Handle("/", router)
+
+	// Admin endpoint to trigger a morning notification for a specific chat_id or user_id
+	mux.HandleFunc("/api/v1/admin/notifications/morning", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		type requestBody struct {
+			ChatID string `json:"chat_id"`
+			UserID string `json:"user_id"`
+		}
+
+		var body requestBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid json body", http.StatusBadRequest)
+			return
+		}
+
+		// Resolve chat_id from user_id if provided
+		resolvedChatID := body.ChatID
+		if resolvedChatID == "" {
+			if body.UserID == "" {
+				http.Error(w, "chat_id or user_id is required", http.StatusBadRequest)
+				return
+			}
+
+			// Parse user id as UUID
+			uid, err := uuid.Parse(body.UserID)
+			if err != nil {
+				http.Error(w, "invalid user_id format", http.StatusBadRequest)
+				return
+			}
+
+			settings, err := userRepo.FindSettingsByUserID(r.Context(), uid)
+			if err != nil {
+				log.Printf("failed to find user settings by user_id %s: %v", body.UserID, err)
+				http.Error(w, "failed to find user settings for provided user_id", http.StatusNotFound)
+				return
+			}
+
+			resolvedChatID = settings.ChatID
+			if resolvedChatID == "" {
+				http.Error(w, "no chat_id associated with the provided user_id", http.StatusNotFound)
+				return
+			}
+		}
+
+		// Call scheduler to send notification immediately
+		if err := scheduler.SendMorningNotificationForChat(r.Context(), resolvedChatID); err != nil {
+			log.Printf("failed to send morning notification: %v", err)
+			http.Error(w, "failed to send morning notification", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
 	// Start server
 	log.Println("Starting server on port", cfg.Port)
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: router,
+		Handler: mux,
 	}
 
 	// Graceful shutdown

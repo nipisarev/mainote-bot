@@ -82,7 +82,7 @@ services:
       - NOTIFICATION_CHAT_IDS=${NOTIFICATION_CHAT_IDS:-}
       - ENABLE_MORNING_NOTIFICATIONS=${ENABLE_MORNING_NOTIFICATIONS:-true}
       - SENTRY_DSN=${SENTRY_DSN:-}
-      - MAINOTE_SERVER_URL=http://mainote-server:${APP_PORT}
+      - MAINOTE_SERVER_URL=http://mainote-server:8081
       - PYTHONUNBUFFERED=1
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     depends_on:
